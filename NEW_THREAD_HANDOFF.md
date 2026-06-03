@@ -19,6 +19,30 @@ The branch currently contains the Rise S3 scenario-library migration:
 - Unknown scenario ids must show/return "Scenario unavailable" and must not silently fall back.
 - Rise remains learner-only: no auth/Cognito, no manager preview, no scenario upload/publish routes, no dashboards, no required local platform assets.
 
+## Current Scripted Chat Response Fix
+
+`Lambda.js` includes a scripted-response fix for chat scenarios where the AI customer was under-responding to manager-approved `customerResponse` text.
+
+Exact implementation details:
+
+- `normalizeChatStepProgression()` preserves `customerResponse` when converting legacy `successSignals` / `phrases` / `keyPhrases` into `match.any contains_any` rules.
+- `normalizeUploadedScenario()` mirrors `scenario.chatConfig.stepProgression` into `scenario.simulation.stateModel.chatStepProgression`, so the runtime has one normalized progression source.
+- `buildScenarioClientConfig()` now includes `label` and `customerResponse` for each returned `chatConfig.stepProgression` step, in addition to `id` and `match`.
+- `buildCustomerBehaviorRules(s)` computes `baseScenarioId` by normalizing the scenario id and stripping a trailing `_chat` or `_voice`, then appends both exact-id and base-id rule sets. This lets `delivery_promise_miss_10_partial_refund_chat` use the shared `delivery_promise_miss_10_partial_refund` rules.
+- `buildChatInstructions(s, currentStep)` looks up the current step from `simulation.stateModel.chatStepProgression` first, then `chatConfig.stepProgression`, by exact `id` or array index.
+- When the current step has `customerResponse`, `buildChatInstructions()` injects a `SCRIPTED RESPONSE RULE` block telling the model to use that response exactly or extremely closely, not shorten it, not summarize it, and not remove details such as pet name, breed, birthday, address, timing concern, refund preference, or closing appreciation.
+- The chat style rule now allows longer responses when a manager-approved scripted response exists for the current step.
+- The `/chat-turn` handler independently checks the current step for `customerResponse` and sends `text.verbosity: "high"` to OpenAI for scripted steps; otherwise it keeps `text.verbosity: "low"`.
+- `ArticulateRise-ChatExperience.html` fixes the client-side progression order. Previously, `sendMessage()` advanced `currentStep` before calling `/chat-turn`, so a matched step 0 agent message sent `currentStep: 1` to Lambda and the AI customer replied with the next beat. The frontend now captures `responseStep = currentStep`, sends that step to Lambda, and advances to `nextStep` only after the customer reply is successfully appended.
+- The no-API fallback reply path now indexes `FALLBACK_CUSTOMER_REPLIES` by `responseStep` instead of `currentStep - 1`.
+
+Support notes:
+
+- The first known failing beat is the `delivery_promise_miss_10_partial_refund_chat` step where the customer should give Rocky's full puppy/birthday/planning context instead of replying only "Rocky" or "His name is Rocky."
+- The current tests cover scenario normalization, preservation of `customerResponse` through legacy step normalization, mirroring `chatConfig.stepProgression` into the state model, `buildScenarioClientConfig()` preserving scripted responses, and the chat frontend sending the matched step to Lambda before advancing progression. They do not directly exercise the live `/chat-turn` `textVerbosity` branch.
+- The Lambda does not currently log the full chat system prompt or selected `text.verbosity` on successful `/chat-turn` requests. CloudWatch will not prove `SCRIPTED RESPONSE RULE` or `text.verbosity: "high"` without adding temporary debug logging.
+- If the issue persists after deployment, add temporary targeted logging for `scenario.id`, `currentStep`, whether `currentStepConfig.customerResponse` is present, and the selected `textVerbosity`. Do not log secrets or full customer transcripts.
+
 ## Important Local Hygiene
 
 Before making changes in a new Codex session:
@@ -89,10 +113,7 @@ aws lambda get-function \
   --output json
 ```
 
-There are other simulator Lambdas in the account. Do not deploy to these unless specifically requested:
-
-- `customer-simulator-prod-cc-customer-simulator`
-- `cc-customer-simulator-library-prototype`
+There are other simulator Lambdas in the account. Do not ever deploy to them.
 
 ## AWS Deploy Rules
 
@@ -154,7 +175,7 @@ Previously run successfully on this branch:
 node tests/behavior-framework.test.js
 ```
 
-All 23 tests passed at that time.
+All 25 tests passed most recently after the scripted chat response and frontend progression fix.
 
 ## Next Likely Steps
 

@@ -3141,14 +3141,12 @@ NOTES
       appendMessage(agentTurn.role, agentTurn.content, agentTurn.label);
       setComposerState(true);
 
+      const responseStep = currentStep;
       const stepPassed = evaluateCurrentStep(text);
-
-      if (stepPassed) {
-        currentStep = Math.min(currentStep + 1, getStepConfigLength());
-      }
+      const nextStep = stepPassed ? Math.min(responseStep + 1, getStepConfigLength()) : responseStep;
 
       try {
-        const customerReply = await getCustomerReply(text, stepPassed);
+        const customerReply = await getCustomerReply(text, stepPassed, responseStep);
         const replyTurn = {
           role: "assistant",
           content: customerReply,
@@ -3157,6 +3155,7 @@ NOTES
         };
         transcript.push(replyTurn);
         appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta);
+        currentStep = nextStep;
       } catch (error) {
         const errorTurn = {
           role: "system",
@@ -3170,14 +3169,14 @@ NOTES
       }
     }
 
-    async function getCustomerReply(latestAgentMessage, stepPassed) {
+    async function getCustomerReply(latestAgentMessage, stepPassed, responseStep) {
       setTyping(true);
 
       if (!CHAT_API_URL) {
         await wait(700);
         setTyping(false);
         return stepPassed
-          ? FALLBACK_CUSTOMER_REPLIES[Math.min(currentStep - 1, FALLBACK_CUSTOMER_REPLIES.length - 1)]
+          ? FALLBACK_CUSTOMER_REPLIES[Math.min(responseStep, FALLBACK_CUSTOMER_REPLIES.length - 1)]
           : "I’m still not totally sure what’s going on. Can you help me understand what happens next?";
       }
 
@@ -3187,7 +3186,7 @@ NOTES
         agentName: getAgentIdentity().agentName,
         sessionId,
         latestAgentMessage,
-        currentStep,
+        currentStep: responseStep,
         transcript: transcript.map((turn) => ({
           role: normalizeRoleForApi(turn.role),
           content: turn.content

@@ -11,6 +11,7 @@ const {
   shouldRetryOpenAIRequest,
   normalizeUploadedScenario,
   normalizeChatStepProgression,
+  buildScenarioClientConfig,
   getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
@@ -34,6 +35,19 @@ async function runTests() {
       throw error;
     }
   }
+}
+
+function readJsonFixture(filename) {
+  const candidates = [
+    path.join("/Users/jmeisburg/Downloads", filename),
+    path.join("/Users/jmeisburg/Downloads/scenario-1", filename),
+    path.join(repoRoot, "fixtures", filename)
+  ];
+  const fixturePath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!fixturePath) {
+    throw new Error(`Missing JSON fixture ${filename}; checked ${candidates.join(", ")}`);
+  }
+  return JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 }
 
 test("maps official behavior ratings to score numerator and denominator", () => {
@@ -456,7 +470,7 @@ test("lambda evaluation schema asks for checklist criteria and richer summary po
 });
 
 test("sample scenario JSON is a single scenario object and normalizes successfully", () => {
-  const scenario = JSON.parse(fs.readFileSync("/Users/jmeisburg/Downloads/on_time_delivery_no_partial_refund_needed_chat.json", "utf8"));
+  const scenario = readJsonFixture("on_time_delivery_no_partial_refund_needed_chat.json");
   const normalized = normalizeUploadedScenario(scenario);
 
   assert.strictEqual(Array.isArray(scenario), false);
@@ -464,6 +478,55 @@ test("sample scenario JSON is a single scenario object and normalizes successful
   assert.deepStrictEqual(normalized.channels, ["chat"]);
   assert.ok(Array.isArray(normalized.frontend.chat.initialTranscript));
   assert.ok(Array.isArray(normalized.frontend.chat.guideSections));
+});
+
+test("chat frontend sends the matched step to Lambda before advancing progression", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const sendMessageBlock = chatHtml.match(/async function sendMessage\(\) \{[\s\S]*?async function getCustomerReply/);
+
+  assert.ok(sendMessageBlock, "sendMessage block not found");
+  assert.match(sendMessageBlock[0], /const responseStep = currentStep;/);
+  assert.match(sendMessageBlock[0], /const nextStep = stepPassed/);
+  assert.match(sendMessageBlock[0], /getCustomerReply\(text, stepPassed, responseStep\)/);
+  assert.match(sendMessageBlock[0], /currentStep = nextStep;/);
+  assert.doesNotMatch(sendMessageBlock[0], /if \(stepPassed\) \{\s*currentStep = Math\.min\(currentStep \+ 1, getStepConfigLength\(\)\);\s*\}/);
+
+  const customerReplyBlock = chatHtml.match(/async function getCustomerReply[\s\S]*?async function getEvaluation/);
+  assert.ok(customerReplyBlock, "getCustomerReply block not found");
+  assert.match(customerReplyBlock[0], /currentStep: responseStep/);
+  assert.match(customerReplyBlock[0], /FALLBACK_CUSTOMER_REPLIES\[Math\.min\(responseStep,/);
+});
+
+test("scenario client config preserves scripted chat customer responses", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "scripted_chat",
+    label: "Scripted Chat",
+    title: "Scripted Chat",
+    channels: ["chat"],
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Hi, can you help?" }],
+        guideSections: []
+      }
+    },
+    chatConfig: {
+      stepProgression: [
+        {
+          id: 0,
+          label: "Ask pet name",
+          match: { any: [{ op: "contains_any", phrases: ["puppy's name"] }] },
+          customerResponse: "His name is Rocky and he's a Corgi."
+        }
+      ]
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Pet Engagement", behaviors: ["Asks about the pet."] }]
+    }
+  });
+
+  const config = buildScenarioClientConfig(scenario);
+  assert.strictEqual(config.chatConfig.stepProgression[0].label, "Ask pet name");
+  assert.strictEqual(config.chatConfig.stepProgression[0].customerResponse, "His name is Rocky and he's a Corgi.");
 });
 
 test("batch scenario arrays are rejected by runtime normalization", () => {

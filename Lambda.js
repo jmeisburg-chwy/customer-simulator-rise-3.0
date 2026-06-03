@@ -487,6 +487,8 @@ function buildScenarioClientConfig(s) {
 
               return {
                 id: Number.isFinite(step.id) ? step.id : 0,
+                label: String(step.label || "").trim(),
+                customerResponse: String(step.customerResponse || "").trim(),
                 match: {
                   all: normalizeConditions(match?.all),
                   any: normalizeConditions(match?.any)
@@ -571,6 +573,7 @@ function buildScenarioClientConfig(s) {
 
 function buildCustomerBehaviorRules(s) {
   const scenarioId = String(s?.id || "").trim();
+  const baseScenarioId = normalizeScenarioId(scenarioId).replace(/_(chat|voice)$/i, "");
 
   const commonRules = [
     "You are roleplaying the customer in a training simulation.",
@@ -591,6 +594,8 @@ function buildCustomerBehaviorRules(s) {
     ],
 
     delivery_promise_miss_10_partial_refund: [
+      "If the agent asks for the puppy's name, do not answer with only 'Rocky' or 'His name is Rocky.' Include that Rocky is a Corgi, the son is turning 10, and Susan has been planning this for months.",
+      "If the agent asks for or verifies the shipping address, do not answer with only the address. Include the address and the concern about the 1 to 3 day shipping promise.",
       "If the agent offers a 10% credit and provides a choice between applying the credit back to the customer's original payment method or to the customer's Chewy account, you must choose the customer's Chewy account option.",
       "When selecting the Chewy account option, respond with this exact sentence: 'That would be great. Put it on my Chewy account.'",
       "Do not request the original payment method if the Chewy account option is offered.",
@@ -600,7 +605,8 @@ function buildCustomerBehaviorRules(s) {
 
   return [
     ...commonRules,
-    ...(scenarioSpecificRules[scenarioId] || [])
+    ...(scenarioSpecificRules[scenarioId] || []),
+    ...(scenarioSpecificRules[baseScenarioId] || [])
   ].join("\n");
 }
 
@@ -898,6 +904,29 @@ function buildChatInstructions(s, currentStep) {
   const v = f.verification || {};
   const customerBehaviorRules = buildCustomerBehaviorRules(s);
 
+  const stepProgression = Array.isArray(s?.simulation?.stateModel?.chatStepProgression)
+    ? s.simulation.stateModel.chatStepProgression
+    : Array.isArray(s?.chatConfig?.stepProgression)
+      ? s.chatConfig.stepProgression
+      : [];
+
+  const currentStepConfig =
+    stepProgression.find((step) => Number(step?.id) === Number(currentStep)) ||
+    stepProgression[Number(currentStep)] ||
+    null;
+
+  const scriptedResponse = String(currentStepConfig?.customerResponse || "").trim();
+  const scriptedResponseBlock = scriptedResponse
+    ? `SCRIPTED RESPONSE RULE
+- For the current step, a manager-approved customer response exists.
+- Use that response exactly or extremely closely.
+- Do not shorten it to a brief answer.
+- Do not summarize it.
+- Do not remove customer-specific details such as pet name, breed, birthday, address, timing concern, refund preference, or closing appreciation.
+- Only make tiny wording adjustments if the learner's message makes the exact wording unnatural.
+- Current scripted response: "${scriptedResponse}"`
+    : "";
+
   const factsBlock = [
     f.customerName ? `- Customer name: ${f.customerName}` : "",
     f.petName ? `- Pet name: ${f.petName}` : "",
@@ -927,7 +956,7 @@ The learner roleplays as the ${between.participantRole || "Chewy agent"}.
 
 CHAT STYLE RULES
 - Reply like a real customer in live chat.
-- Keep responses concise, usually 1 to 3 short sentences.
+- Keep responses concise, usually 1 to 3 short sentences unless a manager-approved scripted response exists for the current step.
 - Do not give coaching.
 - Do not narrate.
 - Do not break character.
@@ -943,6 +972,8 @@ ${between.aiPersonality || ""}
 
 CURRENT STEP
 - Current step number: ${currentStep}
+
+${scriptedResponseBlock}
 
 FACTS YOU MUST STICK TO
 ${factsBlock || "- (No structured facts provided)"}
@@ -1810,6 +1841,21 @@ exports.handler = async (event) => {
         }))
       ];
 
+      // If the current step has a manager-approved scripted response, ask for higher verbosity
+      const stepProgressionForChat = Array.isArray(scenario?.simulation?.stateModel?.chatStepProgression)
+        ? scenario.simulation.stateModel.chatStepProgression
+        : Array.isArray(scenario?.chatConfig?.stepProgression)
+          ? scenario.chatConfig.stepProgression
+          : [];
+
+      const currentStepCfgForChat =
+        stepProgressionForChat.find((step) => Number(step?.id) === Number(currentStep)) ||
+        stepProgressionForChat[Number(currentStep)] ||
+        null;
+
+      const hasScriptedCustomerResponse = Boolean(String(currentStepCfgForChat?.customerResponse || "").trim());
+      const textVerbosity = hasScriptedCustomerResponse ? "high" : "low";
+
       const openAIResult = await fetchOpenAITextWithRetry(
         RESPONSES_URL,
         {
@@ -1823,7 +1869,7 @@ exports.handler = async (event) => {
             input,
             ...buildLowLatencyResponseOptions(CHAT_MODEL),
             text: {
-              verbosity: "low",
+              verbosity: textVerbosity,
               format: {
                 type: "json_schema",
                 name: "chat_turn",
