@@ -8,20 +8,31 @@ const {
   normalizeBehaviorResults,
   buildCoachingDynamoItems,
   selectFocusBehavior,
-  shouldRetryOpenAIRequest
+  shouldRetryOpenAIRequest,
+  normalizeUploadedScenario,
+  normalizeChatStepProgression,
+  getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
 const HOSTED_COACH_CHEWY_URL = "https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png";
 const HOSTED_COACH_CHEWY_RE = new RegExp(HOSTED_COACH_CHEWY_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 const LATE_DELIVERY_SCENARIO_ID = "late_delivery_20_partial_refund";
 
+const tests = [];
+
 function test(name, fn) {
-  try {
-    fn();
-    console.log(`ok - ${name}`);
-  } catch (error) {
-    console.error(`not ok - ${name}`);
-    throw error;
+  tests.push({ name, fn });
+}
+
+async function runTests() {
+  for (const { name, fn } of tests) {
+    try {
+      await fn();
+      console.log(`ok - ${name}`);
+    } catch (error) {
+      console.error(`not ok - ${name}`);
+      throw error;
+    }
   }
 }
 
@@ -352,6 +363,19 @@ test("chat and voice default to the late delivery partial refund scenario", () =
   assert.doesNotMatch(voiceHtml, /const DEFAULT_SCENARIO_ID = "id":/);
 });
 
+test("rise frontends do not require platform-only scripts or local platform assets", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  for (const html of [chatHtml, voiceHtml]) {
+    assert.doesNotMatch(html, /assets\/auth-api\.js/);
+    assert.doesNotMatch(html, /assets\/customer-care-behaviors\.js/);
+    assert.doesNotMatch(html, /ChewyAuth/);
+    assert.doesNotMatch(html, /managerPreview/);
+    assert.doesNotMatch(html, /manager-annotate/);
+  }
+});
+
 test("rise frontends do not silently render generic scenario fallback content", () => {
   const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
   const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
@@ -431,13 +455,93 @@ test("lambda evaluation schema asks for checklist criteria and richer summary po
   assert.match(lambda, /rationale/);
 });
 
-test("lambda embeds the current late delivery scenario JSON", () => {
-  const lambda = fs.readFileSync(path.join(repoRoot, "Lambda.js"), "utf8");
-  const scenario = JSON.parse(fs.readFileSync(path.join(repoRoot, "scenarios", "late_delivery_20_partial_refund.scenario.json"), "utf8"));
+test("sample scenario JSON is a single scenario object and normalizes successfully", () => {
+  const scenario = JSON.parse(fs.readFileSync("/Users/jmeisburg/Downloads/on_time_delivery_no_partial_refund_needed_chat.json", "utf8"));
+  const normalized = normalizeUploadedScenario(scenario);
 
-  assert.match(lambda, /late_delivery_20_partial_refund:\s*\{/);
-  assert.match(lambda, new RegExp(`"id": "${LATE_DELIVERY_SCENARIO_ID}"`));
-  assert.match(lambda, new RegExp(scenario.catalog.description.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.match(lambda, new RegExp(scenario.customer.opening.chat.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.match(lambda, new RegExp(scenario.coaching.behaviorRubric[0].to_great_extent_guidance.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.strictEqual(Array.isArray(scenario), false);
+  assert.strictEqual(normalized.id, "on_time_delivery_no_partial_refund_needed_chat");
+  assert.deepStrictEqual(normalized.channels, ["chat"]);
+  assert.ok(Array.isArray(normalized.frontend.chat.initialTranscript));
+  assert.ok(Array.isArray(normalized.frontend.chat.guideSections));
+});
+
+test("batch scenario arrays are rejected by runtime normalization", () => {
+  assert.throws(
+    () => normalizeUploadedScenario([{ id: "one" }]),
+    /Scenario body must be a single JSON object/
+  );
+});
+
+test("scenario normalization mirrors chatConfig step progression into runtime state model", () => {
+  const stepProgression = [
+    {
+      id: 0,
+      label: "Verify details",
+      match: { any: [{ op: "contains_any", phrases: ["address", "email"] }] },
+      customerResponse: "Yes, that is correct.",
+      scenarioPathHint: "chatConfig.stepProgression[0]"
+    }
+  ];
+
+  const scenario = normalizeUploadedScenario({
+    id: "mirror_test_chat",
+    label: "Mirror Test",
+    title: "Mirror Test",
+    channels: ["chat"],
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Hi, can you help?" }],
+        guideSections: []
+      }
+    },
+    chatConfig: { stepProgression },
+    coaching: {
+      qualityChecklist: [{ category: "Expectation Setting", behaviors: ["Sets a next step."] }]
+    }
+  });
+
+  assert.deepStrictEqual(scenario.chatConfig.stepProgression, stepProgression);
+  assert.deepStrictEqual(scenario.simulation.stateModel.chatStepProgression, stepProgression);
+});
+
+test("legacy successSignals normalize to contains_any chat progression rules", () => {
+  assert.deepStrictEqual(
+    normalizeChatStepProgression([
+      {
+        step: "confirm_order",
+        successSignals: ["tracking", "address"],
+        customerResponse: "Thanks for checking."
+      }
+    ]),
+    [
+      {
+        id: 0,
+        step: "confirm_order",
+        customerResponse: "Thanks for checking.",
+        match: {
+          any: [{ op: "contains_any", phrases: ["tracking", "address"] }]
+        }
+      }
+    ]
+  );
+});
+
+test("unknown scenario ids do not silently fall back to the default scenario", async () => {
+  const scenario = await getScenario("definitely_missing_scenario_id");
+  assert.strictEqual(scenario, null);
+});
+
+test("lambda documents and uses the S3 single-object runtime scenario contract", () => {
+  const lambda = fs.readFileSync(path.join(repoRoot, "Lambda.js"), "utf8");
+
+  assert.match(lambda, /index\.json lists available scenarios/);
+  assert.match(lambda, /scenarios\/\$\{scenarioId\}\.json/);
+  assert.match(lambda, /Batch scenario array files are not supported at runtime/);
+  assert.match(lambda, /SCENARIO_LIBRARY_BUCKET/);
+});
+
+runTests().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });

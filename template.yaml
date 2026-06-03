@@ -6,6 +6,14 @@ Parameters:
     Type: String
     NoEcho: true
     Description: Enter your OpenAI API Key
+  ScenarioLibraryBucketName:
+    Type: String
+    Default: customer-simulator-prod-scenariolibrarybucket-o67zkqye4eaj
+    Description: Existing S3 bucket that stores scenario library index.json and scenarios/{scenario_id}.json files
+  ScenarioLibraryPrefix:
+    Type: String
+    Default: ""
+    Description: Optional key prefix for the S3 scenario library
 
 Resources:
   SimulatorRole:
@@ -33,6 +41,14 @@ Resources:
                 Action:
                   - dynamodb:PutItem
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub arn:aws:s3:::${ScenarioLibraryBucketName}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub arn:aws:s3:::${ScenarioLibraryBucketName}
 
   SimulatorLambda:
     Type: AWS::Lambda::Function
@@ -49,6 +65,8 @@ Resources:
         Variables:
           OPENAI_API_KEY: !Ref OpenAIApiKey
           COACHING_TABLE: RoleplayCoaching
+          SCENARIO_LIBRARY_BUCKET: !Ref ScenarioLibraryBucketName
+          SCENARIO_LIBRARY_PREFIX: !Ref ScenarioLibraryPrefix
 
   Api:
     Type: AWS::ApiGatewayV2::Api
