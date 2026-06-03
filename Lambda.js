@@ -989,6 +989,7 @@ function buildChatInstructions(s, currentStep) {
 - Do not shorten it to a brief answer.
 - Do not summarize it.
 - Do not remove customer-specific details such as pet name, breed, birthday, address, timing concern, refund preference, or closing appreciation.
+- This scripted response overrides the closing line, general closing guidance, and generic customer behavior rules.
 - Only make tiny wording adjustments if the learner's message makes the exact wording unnatural.
 - Current scripted response: "${scriptedResponse}"`
     : "";
@@ -2345,5 +2346,6 @@ exports.__test = {
   normalizeUploadedScenario,
   buildScenarioClientConfig,
   buildRealtimeInstructions,
+  buildChatInstructions,
   getScenario
 };

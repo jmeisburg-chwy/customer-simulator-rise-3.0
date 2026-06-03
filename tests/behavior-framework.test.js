@@ -13,6 +13,7 @@ const {
   normalizeChatStepProgression,
   buildScenarioClientConfig,
   buildRealtimeInstructions,
+  buildChatInstructions,
   getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
@@ -528,6 +529,53 @@ test("scenario client config preserves scripted chat customer responses", () => 
   const config = buildScenarioClientConfig(scenario);
   assert.strictEqual(config.chatConfig.stepProgression[0].label, "Ask pet name");
   assert.strictEqual(config.chatConfig.stepProgression[0].customerResponse, "His name is Rocky and he's a Corgi.");
+});
+
+test("chat scripted response rule overrides closing guidance", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "scripted_close_guard_chat",
+    label: "Scripted Close Guard",
+    title: "Scripted Close Guard",
+    channels: ["chat"],
+    customer: {
+      opening: {
+        chat: "I need help with Larry's food."
+      },
+      persona: {
+        name: "Demarco",
+        tone: "Concerned"
+      }
+    },
+    facts: {
+      customerName: "Demarco",
+      petName: "Larry",
+      closingLine: "No, that's all for now. Thanks for your help."
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with Larry's food." }],
+        guideSections: []
+      }
+    },
+    chatConfig: {
+      stepProgression: [
+        {
+          id: 0,
+          label: "Ask follow-up",
+          match: { any: [{ op: "contains_any", phrases: ["everything looks accurate"] }] },
+          customerResponse: "What happens if this order doesn't arrive on time?"
+        }
+      ]
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Expectation Setting", behaviors: ["Sets a next step."] }]
+    }
+  });
+
+  const instructions = buildChatInstructions(scenario, 0);
+  assert.match(instructions, /SCRIPTED RESPONSE RULE/);
+  assert.match(instructions, /Current scripted response: "What happens if this order doesn't arrive on time\?"/);
+  assert.match(instructions, /This scripted response overrides the closing line, general closing guidance, and generic customer behavior rules\./);
 });
 
 test("realtime voice instructions include runtime customer beats in order", () => {
