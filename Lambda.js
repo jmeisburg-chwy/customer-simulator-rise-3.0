@@ -801,6 +801,69 @@ function buildBehaviorRubricBlock(s) {
     .join("\n\n");
 }
 
+function normalizeApprovedCustomerBeats(s) {
+  const approvedTranscript = Array.isArray(s?.simulation?.approvedTranscript)
+    ? s.simulation.approvedTranscript
+    : [];
+  const voiceBeats = Array.isArray(s?.simulation?.stateModel?.voiceStepProgression)
+    ? s.simulation.stateModel.voiceStepProgression
+    : [];
+  const source = voiceBeats.length ? voiceBeats : approvedTranscript;
+
+  return source
+    .map((beat, index) => {
+      if (!beat || typeof beat !== "object") return null;
+      const customer = normalizeLibraryText(
+        beat.customer ||
+        beat.customerResponse ||
+        beat.response ||
+        beat.customer_message
+      );
+      if (!customer) return null;
+
+      return {
+        beat: Number.isFinite(beat.beat) ? beat.beat : index + 1,
+        guidance: normalizeLibraryText(beat.guidance || beat.label || beat.step),
+        idealAgentResponse: normalizeLibraryText(
+          beat.idealAgentResponse ||
+          beat.ideal_agent_response ||
+          beat.trigger ||
+          beat.when
+        ),
+        customer
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildApprovedCustomerBeatsBlock(s) {
+  const beats = normalizeApprovedCustomerBeats(s);
+  if (!beats.length) return "";
+
+  const beatLines = beats
+    .map((beat, index) => {
+      const lines = [
+        `Beat ${Number.isFinite(beat.beat) ? beat.beat : index + 1}`,
+        beat.guidance ? `Purpose: ${beat.guidance}` : "",
+        beat.idealAgentResponse ? `Only use this beat when the learner has: ${beat.idealAgentResponse}` : "",
+        `Customer should say: "${beat.customer}"`
+      ].filter(Boolean);
+      return lines.join("\n");
+    })
+    .join("\n\n");
+
+  return `
+APPROVED CUSTOMER BEATS
+- Follow these customer beats in order.
+- Use the customer wording exactly or very closely when the learner has earned that beat.
+- Do not skip ahead to a later beat just because a later fact is known.
+- Do not reveal a beat before the learner naturally prompts it or completes the expected agent action.
+- If the learner only partially completes the expected action, respond naturally but stay on the current beat.
+
+${beatLines}
+`.trim();
+}
+
 function buildRealtimeInstructions(s) {
   const between = getScenarioConversationContext(s);
   const f = getScenarioFacts(s);
@@ -829,6 +892,7 @@ function buildRealtimeInstructions(s) {
 
   const startLine = between.aiStart ? `"${between.aiStart}"` : "";
   const customerBehaviorRules = buildCustomerBehaviorRules(s);
+  const approvedCustomerBeatsBlock = buildApprovedCustomerBeatsBlock(s);
 
   return `
 ROLE & PURPOSE
@@ -883,6 +947,8 @@ ${factsBlock || "- (No structured facts provided)"}
 
 CUSTOMER BEHAVIOR RULES
 ${customerBehaviorRules}
+
+${approvedCustomerBeatsBlock}
 
 CUSTOMER BEHAVIOR
 - Ask clarifying questions when the learner is vague.
@@ -2278,5 +2344,6 @@ exports.__test = {
   normalizeChatStepProgression,
   normalizeUploadedScenario,
   buildScenarioClientConfig,
+  buildRealtimeInstructions,
   getScenario
 };

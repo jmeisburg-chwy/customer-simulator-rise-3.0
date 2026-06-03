@@ -43,6 +43,25 @@ Support notes:
 - The Lambda does not currently log the full chat system prompt or selected `text.verbosity` on successful `/chat-turn` requests. CloudWatch will not prove `SCRIPTED RESPONSE RULE` or `text.verbosity: "high"` without adding temporary debug logging.
 - If the issue persists after deployment, add temporary targeted logging for `scenario.id`, `currentStep`, whether `currentStepConfig.customerResponse` is present, and the selected `textVerbosity`. Do not log secrets or full customer transcripts.
 
+## Current Voice Customer Beat Fix
+
+`Lambda.js` now includes ordered customer beats in realtime voice instructions.
+
+Exact implementation details:
+
+- `buildRealtimeInstructions()` adds an `APPROVED CUSTOMER BEATS` block when a scenario contains ordered customer beat data.
+- Runtime voice beat source priority is:
+  - `simulation.stateModel.voiceStepProgression`
+  - fallback to `simulation.approvedTranscript`
+- Each beat can define `customer` or `customerResponse`, plus `guidance` / `label` and `idealAgentResponse` / `trigger`.
+- The prompt tells the realtime customer to follow beats in order, use the customer wording exactly or very closely, avoid skipping ahead, and reveal a beat only when the learner naturally prompts it or completes the expected action.
+- The local voice scenario JSON at `/Users/jmeisburg/Downloads/scenario-1/on_time_delivery_no_partial_refund_needed_voice.json` has been updated with six `simulation.stateModel.voiceStepProgression` beats for Demarco and Larry's on-time delivery scenario.
+
+Support notes:
+
+- `ArticulateRise-VoiceExperience.html` does not manage `currentStep`; voice sequencing is controlled by the Lambda realtime prompt and scenario JSON.
+- The test suite covers that realtime voice instructions include runtime customer beats in order.
+
 ## Important Local Hygiene
 
 Before making changes in a new Codex session:
@@ -175,7 +194,7 @@ Previously run successfully on this branch:
 node tests/behavior-framework.test.js
 ```
 
-All 25 tests passed most recently after the scripted chat response and frontend progression fix.
+All 26 tests passed most recently after the scripted chat response, frontend progression fix, and voice customer beat fix.
 
 ## Next Likely Steps
 

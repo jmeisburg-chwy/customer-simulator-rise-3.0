@@ -12,6 +12,7 @@ const {
   normalizeUploadedScenario,
   normalizeChatStepProgression,
   buildScenarioClientConfig,
+  buildRealtimeInstructions,
   getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
@@ -527,6 +528,71 @@ test("scenario client config preserves scripted chat customer responses", () => 
   const config = buildScenarioClientConfig(scenario);
   assert.strictEqual(config.chatConfig.stepProgression[0].label, "Ask pet name");
   assert.strictEqual(config.chatConfig.stepProgression[0].customerResponse, "His name is Rocky and he's a Corgi.");
+});
+
+test("realtime voice instructions include runtime customer beats in order", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "voice_beats",
+    label: "Voice Beats",
+    title: "Voice Beats",
+    channels: ["voice"],
+    catalog: {
+      description: "Demarco needs delivery reassurance for Larry's food."
+    },
+    customer: {
+      opening: {
+        voice: "I'm calling about Larry's food."
+      },
+      persona: {
+        name: "Demarco",
+        tone: "Concerned"
+      }
+    },
+    facts: {
+      customerName: "Demarco",
+      petName: "Larry",
+      address: "1234 Elm Street in El Paso",
+      closingLine: "No, that's all for now. Thanks for your help."
+    },
+    simulation: {
+      stateModel: {
+        voiceStepProgression: [
+          {
+            id: 0,
+            label: "Runtime voice beat",
+            trigger: "Learner asks for runtime address verification.",
+            customerResponse: "Runtime voice response."
+          }
+        ]
+      },
+      approvedTranscript: [
+        {
+          guidance: "Customer accepts reassurance.",
+          idealAgentResponse: "Explain the order is on track and ask for address verification.",
+          customer: "Thank you. I just want to be sure it gets here on time."
+        },
+        {
+          guidance: "Customer provides address only when asked.",
+          idealAgentResponse: "Confirm the full address back.",
+          customer: "It's 1234 Elm Street in El Paso."
+        }
+      ]
+    },
+    frontend: {
+      voice: {
+        guideSections: [{ title: "Guide", bullets: ["Help Demarco."] }]
+      }
+    }
+  });
+
+  const instructions = buildRealtimeInstructions(scenario);
+  assert.match(instructions, /APPROVED CUSTOMER BEATS/);
+  assert.match(instructions, /Beat 1/);
+  assert.match(instructions, /Purpose: Runtime voice beat/);
+  assert.match(instructions, /Only use this beat when the learner has: Learner asks for runtime address verification\./);
+  assert.match(instructions, /Customer should say: "Runtime voice response\."/);
+  assert.doesNotMatch(instructions, /Thank you\. I just want to be sure it gets here on time\./);
+  assert.match(instructions, /Follow these customer beats in order/);
 });
 
 test("batch scenario arrays are rejected by runtime normalization", () => {
