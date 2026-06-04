@@ -1043,6 +1043,23 @@ test("late delivery chat progression requires complete learner behaviors for key
   );
 });
 
+test("late delivery runtime scenarios are split into chat and voice sources", () => {
+  const chatScenario = JSON.parse(fs.readFileSync(path.join(repoRoot, "scenarios", "late_delivery_20_partial_refund_chat.json"), "utf8"));
+  const voiceScenario = JSON.parse(fs.readFileSync(path.join(repoRoot, "scenarios", "late_delivery_20_partial_refund.scenario.json"), "utf8"));
+
+  assert.strictEqual(chatScenario.id, LATE_DELIVERY_CHAT_SCENARIO_ID);
+  assert.strictEqual(chatScenario.channels.join(","), "chat");
+  assert.ok(Array.isArray(chatScenario.simulation?.stateModel?.chatStepProgression));
+  assert.strictEqual(chatScenario.simulation.stateModel.chatStepProgression.length, 7);
+
+  assert.strictEqual(voiceScenario.id, LATE_DELIVERY_SCENARIO_ID);
+  assert.strictEqual(voiceScenario.channels.join(","), "voice");
+  assert.ok(voiceScenario.frontend?.voice, "base voice scenario should keep frontend.voice");
+  assert.ok(!voiceScenario.frontend?.chat, "base voice scenario should not include frontend.chat");
+  assert.ok(!voiceScenario.chatConfig, "base voice scenario should not include chatConfig");
+  assert.ok(!voiceScenario.simulation?.stateModel?.chatStepProgression, "base voice scenario should not advertise chat progression");
+});
+
 test("realtime voice instructions include runtime customer beats in order", () => {
   const scenario = normalizeUploadedScenario({
     id: "voice_beats",
