@@ -824,6 +824,113 @@ test("chat scripted response is withheld when learner misses the current step", 
   assert.match(instructions, /Acknowledge and offer help/);
 });
 
+test("customer behavior rules include scenario JSON behavior fields", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "json_behavior_rules_chat",
+    label: "JSON Behavior Rules",
+    title: "JSON Behavior Rules",
+    channels: ["chat"],
+    customer: {
+      opening: {
+        chat: "I need help with my order."
+      },
+      persona: {
+        name: "Customer",
+        tone: "Concerned"
+      },
+      behavior: {
+        rules: [
+          "Only share the shipping address after the learner asks to verify it.",
+          "Stay on the current beat when the learner gives a partial answer."
+        ],
+        conditionalFollowUps: [
+          {
+            condition: "If the learner skips the delivery expectation.",
+            reply: "Can you tell me when it is actually arriving?"
+          }
+        ],
+        allowedObjections: [
+          "That still doesn't explain why it is late."
+        ],
+        softeningRule: "If the learner explains clearly and owns the next step, become calmer.",
+        closingRule: "Close only after the learner recaps the refund and delivery plan.",
+        closingLine: "Okay, thank you."
+      }
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with my order." }],
+        guideSections: []
+      }
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Ownership", behaviors: ["Owns the next step."] }]
+    }
+  });
+
+  const instructions = buildChatInstructions(scenario, 0);
+
+  assert.match(instructions, /Only share the shipping address after the learner asks to verify it\./);
+  assert.match(instructions, /Stay on the current beat when the learner gives a partial answer\./);
+  assert.match(instructions, /If the learner skips the delivery expectation\./);
+  assert.match(instructions, /Can you tell me when it is actually arriving\?/);
+  assert.match(instructions, /That still doesn't explain why it is late\./);
+  assert.match(instructions, /If the learner explains clearly and owns the next step, become calmer\./);
+  assert.match(instructions, /Close only after the learner recaps the refund and delivery plan\./);
+});
+
+test("customer behavior rules preserve legacy facts follow ups and objections", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "legacy_behavior_rules_chat",
+    label: "Legacy Behavior Rules",
+    title: "Legacy Behavior Rules",
+    channels: ["chat"],
+    facts: {
+      conditionalFollowUp: "If the learner is vague, ask for the tracking expectation.",
+      allowedObjections: ["I am still worried this will miss the delivery window."]
+    },
+    customer: {
+      opening: {
+        chat: "I need help with my order."
+      },
+      persona: {
+        name: "Customer",
+        tone: "Concerned"
+      }
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with my order." }],
+        guideSections: []
+      }
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Ownership", behaviors: ["Owns the next step."] }]
+    }
+  });
+
+  const instructions = buildChatInstructions(scenario, 0);
+
+  assert.match(instructions, /If the learner is vague, ask for the tracking expectation\./);
+  assert.match(instructions, /I am still worried this will miss the delivery window\./);
+});
+
+test("late delivery behavior rules come from scenario JSON without Lambda scenario id hardcoding", () => {
+  const lambda = fs.readFileSync(path.join(repoRoot, "Lambda.js"), "utf8");
+  const scenario = normalizeUploadedScenario(
+    JSON.parse(fs.readFileSync(path.join(repoRoot, "scenarios", "late_delivery_20_partial_refund_chat.json"), "utf8"))
+  );
+
+  const instructions = buildChatInstructions(scenario, 0);
+
+  assert.doesNotMatch(lambda, /scenarioSpecificRules/);
+  assert.doesNotMatch(lambda, /on_time_delivery_no_partial_refund_needed/);
+  assert.doesNotMatch(lambda, /delivery_promise_miss_10_partial_refund/);
+  assert.match(instructions, /Do not reveal the shipping address until the learner asks for or confirms the shipping address\./);
+  assert.match(instructions, /If the learner only partially completes the expected action, stay on the current beat/);
+  assert.match(instructions, /If the learner acknowledges the frustration, explains the delay clearly, offers the correct refund with options, and sets expectations, become calmer and cooperative\./);
+});
+
 test("lambda infers chat step pass state when older clients omit it", () => {
   const scenario = normalizeUploadedScenario({
     id: "server_side_step_inference_chat",

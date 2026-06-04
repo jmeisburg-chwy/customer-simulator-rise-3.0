@@ -571,9 +571,34 @@ function buildScenarioClientConfig(s) {
   };
 }
 
+function normalizeCustomerRuleItems(items) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      if (!item || typeof item !== "object") return "";
+
+      const rule = String(item.rule || "").trim();
+      if (rule) return rule;
+
+      const condition = String(item.condition || "").trim();
+      const reply = String(item.reply || item.response || "").trim();
+      if (condition && reply) return `${condition} Reply with or close to: "${reply}"`;
+      if (condition) return condition;
+      if (reply) return `When appropriate, reply with or close to: "${reply}"`;
+      return "";
+    })
+    .filter(Boolean);
+}
+
+function getFirstCustomerRuleText(items) {
+  return normalizeCustomerRuleItems(Array.isArray(items) ? items.slice(0, 1) : []).join("");
+}
+
 function buildCustomerBehaviorRules(s) {
-  const scenarioId = String(s?.id || "").trim();
-  const baseScenarioId = normalizeScenarioId(scenarioId).replace(/_(chat|voice)$/i, "");
+  const legacy = s?.facts && typeof s.facts === "object" ? s.facts : {};
+  const customerBehavior = s?.customer?.behavior && typeof s.customer.behavior === "object" ? s.customer.behavior : {};
 
   const commonRules = [
     "You are roleplaying the customer in a training simulation.",
@@ -585,28 +610,35 @@ function buildCustomerBehaviorRules(s) {
     "If the agent explains clearly and shows empathy and ownership, respond naturally with appreciation, reassurance, or a brief confirmation."
   ];
 
-  const scenarioSpecificRules = {
-    on_time_delivery_no_partial_refund_needed: [
-      "If the agent proactively explains what to do if the order is delayed, you must not ask, 'What happens if this order doesn’t arrive on time?'",
-      "If the agent already explained what to do in the event of a delay, respond with appreciation or reassurance and move toward closing.",
-      "Never combine both of these ideas in the same turn: 'I just want to be sure it gets here on time.' and 'What happens if this order doesn’t arrive on time?'",
-      "Only ask the delay question if the agent has not already explained the next step if the order is delayed."
-    ],
-
-    delivery_promise_miss_10_partial_refund: [
-      "If the agent asks for the puppy's name, do not answer with only 'Rocky' or 'His name is Rocky.' Include that Rocky is a Corgi, the son is turning 10, and Susan has been planning this for months.",
-      "If the agent asks for or verifies the shipping address, do not answer with only the address. Include the address and the concern about the 1 to 3 day shipping promise.",
-      "If the agent offers a 10% credit and provides a choice between applying the credit back to the customer's original payment method or to the customer's Chewy account, you must choose the customer's Chewy account option.",
-      "When selecting the Chewy account option, respond with this exact sentence: 'That would be great. Put it on my Chewy account.'",
-      "Do not request the original payment method if the Chewy account option is offered.",
-      "Do not ask additional follow-up questions after accepting the Chewy account credit. Move toward closing the conversation naturally."
-    ]
-  };
+  const scenarioRules = normalizeCustomerRuleItems(
+    Array.isArray(customerBehavior.rules) ? customerBehavior.rules : [customerBehavior.rules]
+  );
+  const conditionalFollowUps = [
+    ...normalizeCustomerRuleItems(
+      legacy.conditionalFollowUp ? [{ rule: legacy.conditionalFollowUp }] : []
+    ),
+    ...normalizeCustomerRuleItems(customerBehavior.conditionalFollowUps)
+  ].map((rule) => `Conditional follow-up: ${rule}`);
+  const allowedObjections = (
+    Array.isArray(customerBehavior.allowedObjections)
+      ? customerBehavior.allowedObjections
+      : Array.isArray(legacy.allowedObjections)
+        ? legacy.allowedObjections
+        : []
+  )
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .map((item) => `Allowed objection: ${item}`);
+  const softeningRule = String(customerBehavior.softeningRule || customerBehavior.successSofteningRule || "").trim();
+  const closingRule = String(customerBehavior.closingRule || "").trim();
 
   return [
     ...commonRules,
-    ...(scenarioSpecificRules[scenarioId] || []),
-    ...(scenarioSpecificRules[baseScenarioId] || [])
+    ...scenarioRules,
+    ...conditionalFollowUps,
+    ...allowedObjections,
+    ...(softeningRule ? [`Softening rule: ${softeningRule}`] : []),
+    ...(closingRule ? [`Closing rule: ${closingRule}`] : [])
   ].join("\n");
 }
 
@@ -669,9 +701,7 @@ function getScenarioFacts(s) {
     keyQuestion: String(customerFacts.keyQuestion || legacy.keyQuestion || "").trim(),
     conditionalFollowUp: String(
       legacy.conditionalFollowUp ||
-      (Array.isArray(customerBehavior.conditionalFollowUps) && customerBehavior.conditionalFollowUps[0]
-        ? customerBehavior.conditionalFollowUps[0].rule
-        : "")
+      getFirstCustomerRuleText(customerBehavior.conditionalFollowUps)
     ).trim(),
     closingLine: String(customerBehavior.closingLine || legacy.closingLine || "").trim(),
     allowedObjections: Array.isArray(customerBehavior.allowedObjections)

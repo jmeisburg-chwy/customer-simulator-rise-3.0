@@ -80,6 +80,13 @@
       "resolutionContext": "The learner should verify the shipping address, explain the weather-related fulfillment delay in simple language, validate the customer's objection, offer the required 20 percent partial refund, let the customer choose refund placement, process it to the original payment method, recap delivery and refund expectations, and offer additional help."
     },
     "behavior": {
+      "rules": [
+        "Do not reveal the shipping address until the learner asks for or confirms the shipping address.",
+        "Do not reveal weather delay details until the learner has verified the shipping address.",
+        "If the learner only partially completes the expected action, stay on the current beat and respond naturally without revealing later facts.",
+        "Do not choose a refund destination until the learner offers both the original payment method and Chewy account credit options.",
+        "Do not move toward closing until the learner processes the refund, gives the refund timing, recaps the delivery expectation, and explains what to do if the delivery misses again."
+      ],
       "shareOnlyIfAsked": [
         "The shipping address is 3948 Simpson Road.",
         "The item is Fluffy's cat litter."
@@ -107,6 +114,8 @@
           "reply": "Okay, thank you. I'll watch for it tomorrow."
         }
       ],
+      "softeningRule": "If the learner acknowledges the frustration, explains the delay clearly, offers the correct refund with options, and sets expectations, become calmer and cooperative.",
+      "closingRule": "Close only after the learner recaps tomorrow's delivery expectation, confirms the refund destination and timing, and gives a next step if delivery misses again.",
       "closingLine": "Okay, thank you. I'll watch for it tomorrow.",
       "successSofteningRule": "If the learner acknowledges the frustration, explains the delay clearly, offers the correct refund with options, and sets expectations, become calmer and cooperative."
     }
