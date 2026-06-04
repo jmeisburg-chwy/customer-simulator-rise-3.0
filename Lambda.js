@@ -1612,7 +1612,11 @@ function normalizeLearnerFields(body) {
     learner_id: learnerId,
     learner_name: learnerName,
     learner_first_name: String(body.learner_first_name || body.learnerFirstName || split.learner_first_name).trim(),
-    learner_last_name: String(body.learner_last_name || body.learnerLastName || split.learner_last_name).trim()
+    learner_last_name: String(body.learner_last_name || body.learnerLastName || split.learner_last_name).trim(),
+    learner_employee_id: String(body.learner_employee_id || body.learnerEmployeeId || "").trim(),
+    learner_username: String(body.learner_username || body.learnerUsername || "").trim(),
+    learner_email: String(body.learner_email || body.learnerEmail || "").trim(),
+    learner_identity_source: String(body.learner_identity_source || body.learnerIdentitySource || "").trim()
   };
 }
 
@@ -1669,6 +1673,8 @@ function buildCoachingDynamoItems(body) {
 
   const sessionItem = {
     ...base,
+    // DynamoDB has a 400KB item limit; long calls may eventually need S3 transcript storage.
+    transcript,
     coachSummaryText: String(body.coachSummaryText || body.coach_summary_text || body.summary || "").trim(),
     what_went_well: String(body.what_went_well || body.whatWentWell || "").trim(),
     what_to_strengthen_next: String(body.what_to_strengthen_next || body.whatToStrengthenNext || "").trim(),

@@ -226,6 +226,7 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
   const items = buildCoachingDynamoItems({
     simulation_session_id: "session-1",
     learner_id: "12345",
+    learner_employee_id: "12345",
     learner_name: "Jane Learner",
     learner_first_name: "Jane",
     learner_last_name: "Learner",
@@ -238,7 +239,7 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
     completed_at: "2026-05-13T12:00:00.000Z",
     created_at: "2026-05-13T11:59:00.000Z",
     completionStatus: "Completed",
-    transcript: "Agent: I can help with Fluffy's late litter order.",
+    transcript: "Agent: I can help with Fluffy's late litter order.\\nCustomer: Thank you for checking.",
     coachSummaryText: "You handled the late delivery with clear ownership and helpful next steps.",
     what_went_well: "You identified the delivery problem and gave a clear replacement timeline.",
     what_to_strengthen_next: "Keep making empathy specific to the customer's situation.",
@@ -269,16 +270,17 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
     assert.strictEqual(item[key], value, `session ${key}`);
   }
   assert.ok(item.trainingTime);
+  assert.strictEqual(item.learner_employee_id, "12345");
+  assert.strictEqual(item.learner_username, "jlearner");
+  assert.strictEqual(item.learner_email, "jane.learner@example.com");
+  assert.strictEqual(item.learner_identity_source, "");
+  assert.strictEqual(item.transcript, "Agent: I can help with Fluffy's late litter order.\nCustomer: Thank you for checking.");
   assert.strictEqual(item.coachSummaryText, "You handled the late delivery with clear ownership and helpful next steps.");
   assert.strictEqual(item.what_went_well, "You identified the delivery problem and gave a clear replacement timeline.");
   assert.strictEqual(item.what_to_strengthen_next, "Keep making empathy specific to the customer's situation.");
   assert.strictEqual(item.final_score, 66.7);
   assert.strictEqual(item.focus_behavior, "problem_ownership");
   assert.ok(!Object.hasOwn(item, "agentName"));
-  assert.ok(!Object.hasOwn(item, "learner_employee_id"));
-  assert.ok(!Object.hasOwn(item, "learner_username"));
-  assert.ok(!Object.hasOwn(item, "learner_email"));
-  assert.ok(!Object.hasOwn(item, "learner_identity_source"));
   assert.ok(!Object.hasOwn(item, "record_type"));
   assert.ok(!Object.hasOwn(item, "scenarioLabel"));
   assert.ok(!Object.hasOwn(item, "course_id"));
@@ -287,7 +289,6 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
   assert.ok(!Object.hasOwn(item, "total_score_denominator"));
   assert.ok(!Object.hasOwn(item, "strongest_behaviors"));
   assert.ok(!Object.hasOwn(item, "behavior_results"));
-  assert.ok(!Object.hasOwn(item, "transcript"));
   assert.ok(!Object.hasOwn(item, "what_went_well_points"));
   assert.ok(!Object.hasOwn(item, "what_to_strengthen_next_points"));
   assert.ok(!Object.hasOwn(item, "behaviors"));
@@ -481,6 +482,20 @@ test("voice customer transcripts are captured from Realtime assistant transcript
   assert.match(voiceHtml, /function completeRealtimeTranscript\(speaker, msg, source\)/);
   assert.match(voiceHtml, /"realtime_assistant_transcript"/);
   assert.match(voiceHtml, /addTurn\(speaker, text, \{ source, item_id: itemId \}\)/);
+});
+
+test("chat and voice structured coaching payloads include transcripts", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+  const chatReportingBlock = chatHtml.match(/function buildReportingPayload\(evaluation, errorText = ""\) \{[\s\S]*?async function fetchJSON/);
+  const voiceReportingBlock = voiceHtml.match(/function buildReportingPayload\(evaluation, transcriptText, scenarioId, scenarioLabel, endedAt, errorText = ""\) \{[\s\S]*?async function saveCoachingRecord/);
+
+  assert.ok(chatReportingBlock, "chat buildReportingPayload block not found");
+  assert.ok(voiceReportingBlock, "voice buildReportingPayload block not found");
+  assert.match(chatReportingBlock[0], /behavior_results: normalizedBehaviorResults\.behaviors/);
+  assert.match(chatReportingBlock[0], /transcript: transcriptToEvalText\(\)/);
+  assert.match(voiceReportingBlock[0], /behavior_results: normalizedBehaviorResults\.behaviors/);
+  assert.match(voiceReportingBlock[0], /transcript: String\(transcriptText \|\| ""\)\.replace/);
 });
 
 test("rise frontends do not require platform-only scripts or local platform assets", () => {
