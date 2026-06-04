@@ -5,7 +5,7 @@ HOW TO USE
 1. Upload/paste this file into your Articulate Rise block for the chat experience.
 2. Set SESSION_BASE to your AWS API base URL.
 3. Set SCENARIO_OVERRIDE to the scenario id you want to run.
-4. This file currently selects late_delivery_20_partial_refund directly.
+4. This file currently selects late_delivery_20_partial_refund_chat directly.
 
 WHAT TO EDIT
 - SESSION_BASE = your API Gateway base URL
@@ -13,7 +13,7 @@ WHAT TO EDIT
 
 EXAMPLE
 const SESSION_BASE = "https://your-api-id.execute-api.us-east-2.amazonaws.com";
-const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
+const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
 
 NOTES
 - This file is chat-only.
@@ -1775,8 +1775,8 @@ NOTES
     const EVAL_API_URL = SESSION_BASE + "/evaluate";
     const SAVE_API_URL = SESSION_BASE + "/coaching";
 
-    const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
-    const DEFAULT_SCENARIO_ID = "late_delivery_20_partial_refund";
+    const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
+    const DEFAULT_SCENARIO_ID = "late_delivery_20_partial_refund_chat";
     const SCENARIO_ID = (() => {
       const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
       if (explicitOverride) return explicitOverride;

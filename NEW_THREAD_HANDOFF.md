@@ -37,6 +37,7 @@ Exact implementation details:
 - The scripted response block also explicitly forbids adding future customer questions, later scripted beats, closing lines, or any extra content beyond the current scripted response. This guards against the model combining an address-only beat with the next follow-up question.
 - `ArticulateRise-ChatExperience.html` fixes the client-side progression order. Previously, `sendMessage()` advanced `currentStep` before calling `/chat-turn`, so a matched step 0 agent message sent `currentStep: 1` to Lambda and the AI customer replied with the next beat. The frontend now captures `responseStep = currentStep`, sends that step to Lambda, and advances to `nextStep` only after the customer reply is successfully appended.
 - The no-API fallback reply path now indexes `FALLBACK_CUSTOMER_REPLIES` by `responseStep` instead of `currentStep - 1`.
+- `ArticulateRise-ChatExperience.html` now defaults to `late_delivery_20_partial_refund_chat`, the actual S3 chat scenario object id. The base id `late_delivery_20_partial_refund` was not loadable from the current S3 scenario library.
 
 Support notes:
 
@@ -45,6 +46,7 @@ Support notes:
 - The Lambda does not currently log the full chat system prompt or selected `text.verbosity` on successful `/chat-turn` requests. CloudWatch will not prove `SCRIPTED RESPONSE RULE` or `text.verbosity: "high"` without adding temporary debug logging.
 - If the issue persists after deployment, add temporary targeted logging for `scenario.id`, `currentStep`, whether `currentStepConfig.customerResponse` is present, and the selected `textVerbosity`. Do not log secrets or full customer transcripts.
 - The local chat scenario JSON at `/Users/jmeisburg/Downloads/scenario-1/on_time_delivery_no_partial_refund_needed_chat.json` has been updated to remove the extra "Can you send me the tracking link?" customer beat. When asked to confirm the shipping address, step 1 now replies only `It's 1234 Elm Street in El Paso.` After the learner confirms the address looks accurate, step 2 asks `What happens if this order doesn't arrive on time?`, step 3 says `Perfect, that helps a lot.`, and step 4 closes only after the learner offers final help.
+- The local chat scenario JSON at `/Users/jmeisburg/Downloads/scenario-3/late_delivery_20_partial_refund_chat.json` has the first scripted reply as `Yes, that’s the one.` and the address reply as the next step only after the learner asks to verify the shipping address. Live `/chat-turn` verification against `late_delivery_20_partial_refund_chat` returned `Yes, that’s the one.` for `currentStep: 0` and `Sure, it’s 3948 Simpson Rd.` for `currentStep: 1`, confirming that an early address response means the client sent step 1 too soon or the Rise block is using stale HTML. The local scenario JSON refund timing was also aligned to `3 to 5 business days`.
 
 ## Current Voice Customer Beat Fix
 
@@ -197,7 +199,7 @@ Previously run successfully on this branch:
 node tests/behavior-framework.test.js
 ```
 
-All 28 tests passed most recently after the scripted chat response, frontend progression fix, voice customer beat fix, on-time delivery chat sequence update, and current-step guard against adding later scripted beats.
+All 28 tests passed most recently after the scripted chat response, frontend progression fix, chat scenario id correction to `late_delivery_20_partial_refund_chat`, voice customer beat fix, on-time delivery chat sequence update, and current-step guard against adding later scripted beats.
 
 ## Next Likely Steps
 

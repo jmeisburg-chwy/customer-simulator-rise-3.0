@@ -20,6 +20,7 @@ const {
 const HOSTED_COACH_CHEWY_URL = "https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png";
 const HOSTED_COACH_CHEWY_RE = new RegExp(HOSTED_COACH_CHEWY_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 const LATE_DELIVERY_SCENARIO_ID = "late_delivery_20_partial_refund";
+const LATE_DELIVERY_CHAT_SCENARIO_ID = "late_delivery_20_partial_refund_chat";
 
 const tests = [];
 
@@ -370,9 +371,9 @@ test("chat and voice default to the late delivery partial refund scenario", () =
   const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
   const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
 
-  assert.match(chatHtml, new RegExp(`const SCENARIO_OVERRIDE = "${LATE_DELIVERY_SCENARIO_ID}"`));
+  assert.match(chatHtml, new RegExp(`const SCENARIO_OVERRIDE = "${LATE_DELIVERY_CHAT_SCENARIO_ID}"`));
   assert.match(voiceHtml, new RegExp(`const SCENARIO_OVERRIDE = "${LATE_DELIVERY_SCENARIO_ID}"`));
-  assert.match(chatHtml, new RegExp(`const DEFAULT_SCENARIO_ID = "${LATE_DELIVERY_SCENARIO_ID}"`));
+  assert.match(chatHtml, new RegExp(`const DEFAULT_SCENARIO_ID = "${LATE_DELIVERY_CHAT_SCENARIO_ID}"`));
   assert.match(voiceHtml, new RegExp(`const DEFAULT_SCENARIO_ID = "${LATE_DELIVERY_SCENARIO_ID}"`));
   assert.match(chatHtml, /const STATIC_CHAT_INSTRUCTIONS = \[/);
   assert.doesNotMatch(chatHtml, /const DEFAULT_SCENARIO_ID = "id":/);
