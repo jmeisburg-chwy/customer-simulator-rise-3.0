@@ -1,0 +1,17 @@
+{
+  "id": "late_delivery_20_partial_refund_mixed_chat",
+  "scenario_id": "late_delivery_20_partial_refund_chat",
+  "scenario_name": "Late Delivery, 20% Partial Refund",
+  "channel": "chat",
+  "transcript": "Customer: According to my tracking information, Fluffy's cat litter was supposed to be here 2 days ago and I still haven't seen it. Can you check on it for me?\nAgent: Hi, sorry about that. I can check the order.\nCustomer: Yes, that's the one.\nAgent: Can you confirm the shipping address?\nCustomer: Sure, it's 3948 Simpson Rd.\nAgent: Thanks, I see the address. It looks like weather near the fulfillment center delayed the package and it should arrive tomorrow by end of day.\nCustomer: Why is that my problem? There's no weather where I live! You should have shipped it from another location.\nAgent: I get that this is frustrating. We can do a 20% refund for the delay, and I can put it back on your card.\nCustomer: Please credit it back to the card.\nAgent: Okay, I processed that. It should show up in 3 to 5 business days. Anything else?\nCustomer: Okay, thank you.",
+  "expected_behavior_ratings": {
+    "issue_understanding": "To Some Extent",
+    "emotional_acknowledgement": "To Some Extent",
+    "problem_ownership": "To Some Extent",
+    "personalization": "Missed Opportunity",
+    "expectation_setting": "To Some Extent",
+    "pet_engagement": "Missed Opportunity",
+    "communication_style": "To Some Extent"
+  },
+  "trainer_notes": "Mixed example: the learner verifies the address, gives the weather cause, gives tomorrow delivery, offers and processes a refund, and gives refund timing. They miss the pet-centered context, do not use the customer or pet name, do not present both refund destination options, and do not give a next step if the delivery misses again."
+}

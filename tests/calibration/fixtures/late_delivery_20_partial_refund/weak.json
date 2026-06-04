@@ -1,0 +1,17 @@
+{
+  "id": "late_delivery_20_partial_refund_weak_chat",
+  "scenario_id": "late_delivery_20_partial_refund_chat",
+  "scenario_name": "Late Delivery, 20% Partial Refund",
+  "channel": "chat",
+  "transcript": "Customer: According to my tracking information, Fluffy's cat litter was supposed to be here 2 days ago and I still haven't seen it. Can you check on it for me?\nAgent: It is delayed. You can watch tracking.\nCustomer: Yes, that's the one.\nAgent: It will get there when the carrier delivers it.\nCustomer: Why is that my problem? There's no weather where I live! You should have shipped it from another location.\nAgent: Weather happens, and we cannot control it. You just need to wait.\nCustomer: What can you do to make this right?\nAgent: I can give you a small refund.\nCustomer: Please credit it back to the card.\nAgent: Done.\nCustomer: Okay.",
+  "expected_behavior_ratings": {
+    "issue_understanding": "Missed Opportunity",
+    "emotional_acknowledgement": "Missed Opportunity",
+    "problem_ownership": "Missed Opportunity",
+    "personalization": "Missed Opportunity",
+    "expectation_setting": "Missed Opportunity",
+    "pet_engagement": "Missed Opportunity",
+    "communication_style": "Missed Opportunity"
+  },
+  "trainer_notes": "Weak example: the learner does not verify the address, does not personalize, does not acknowledge frustration, gives a defensive weather response, does not clearly offer the required 20% refund or both destination options, and gives no delivery, refund timing, or missed-delivery next step."
+}

@@ -1,0 +1,17 @@
+{
+  "id": "late_delivery_20_partial_refund_strong_chat",
+  "scenario_id": "late_delivery_20_partial_refund_chat",
+  "scenario_name": "Late Delivery, 20% Partial Refund",
+  "channel": "chat",
+  "transcript": "Customer: According to my tracking information, Fluffy's cat litter was supposed to be here 2 days ago and I still haven't seen it. Can you check on it for me?\nAgent: Hi Mr. Munsen, thank you for reaching out. I am sorry Fluffy's cat litter is late; I know that is an essential item. I can absolutely look into the order for you now.\nCustomer: Yes, that's the one.\nAgent: Before I review the delivery details, could you please confirm the shipping address on the order?\nCustomer: Sure, it's 3948 Simpson Rd.\nAgent: Thank you. I have verified 3948 Simpson Road. I see severe weather near the fulfillment center slowed outbound deliveries, and tracking now shows the order is scheduled to arrive tomorrow by end of day.\nCustomer: Why is that my problem? There's no weather where I live! You should have shipped it from another location.\nAgent: I understand why that feels unfair, especially when the weather is not where you live. I am sorry for the frustration. Since this is now three days past the original estimate, I can offer the required 20% partial refund. I can apply it back to your original payment method or as Chewy account credit, whichever you prefer.\nCustomer: Please credit it back to the card.\nAgent: I will process the 20% refund back to your original payment method now, and it should appear within 3 to 5 business days. Your order is still scheduled to arrive tomorrow by end of day at 3948 Simpson Road. If it does not arrive tomorrow, please reach back out so we can help right away. Is there anything else I can help with today?\nCustomer: Okay, thank you. I'll watch for it tomorrow.",
+  "expected_behavior_ratings": {
+    "issue_understanding": "To a Great Extent",
+    "emotional_acknowledgement": "To a Great Extent",
+    "problem_ownership": "To a Great Extent",
+    "personalization": "To a Great Extent",
+    "expectation_setting": "To a Great Extent",
+    "pet_engagement": "To a Great Extent",
+    "communication_style": "To a Great Extent"
+  },
+  "trainer_notes": "Strong example: the learner names Mr. Munsen, Fluffy, and the cat litter; verifies the address; explains the fulfillment-center weather delay; validates the fairness objection; offers both refund destinations; processes the selected card refund; gives refund timing, delivery recap, and a next step if delivery misses."
+}
