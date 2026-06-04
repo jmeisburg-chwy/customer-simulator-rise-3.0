@@ -908,6 +908,12 @@ function inferChatStepPassed(s, currentStep, latestAgentMessage) {
   return allPassed && anyPassed;
 }
 
+function resolveChatCustomerMessage(generatedMessage, scriptedResponse, hasScriptedCustomerResponse) {
+  const scripted = String(scriptedResponse || "").trim();
+  if (hasScriptedCustomerResponse && scripted) return scripted;
+  return String(generatedMessage || "").trim();
+}
+
 function buildRealtimeInstructions(s) {
   const between = getScenarioConversationContext(s);
   const f = getScenarioFacts(s);
@@ -1964,7 +1970,8 @@ exports.handler = async (event) => {
       // If the current turn has an active manager-approved scripted response, ask for higher verbosity.
       const currentStepCfgForChat = getChatStepConfig(scenario, currentStep);
 
-      const hasScriptedCustomerResponse = stepPassed && Boolean(String(currentStepCfgForChat?.customerResponse || "").trim());
+      const scriptedCustomerResponse = String(currentStepCfgForChat?.customerResponse || "").trim();
+      const hasScriptedCustomerResponse = stepPassed && Boolean(scriptedCustomerResponse);
       const textVerbosity = hasScriptedCustomerResponse ? "high" : "low";
 
       const openAIResult = await fetchOpenAITextWithRetry(
@@ -2031,8 +2038,14 @@ exports.handler = async (event) => {
         }, 502);
       }
 
+      const customerMessage = resolveChatCustomerMessage(
+        structured.customerMessage,
+        scriptedCustomerResponse,
+        hasScriptedCustomerResponse
+      );
+
       return json({
-        customerMessage: String(structured.customerMessage || "").trim(),
+        customerMessage,
         currentStep: Number.isFinite(structured.currentStep) ? structured.currentStep : currentStep,
         _scenario: { id: scenario.id, label: scenario.label, title: scenario.title }
       });
@@ -2392,5 +2405,6 @@ exports.__test = {
   buildRealtimeInstructions,
   buildChatInstructions,
   inferChatStepPassed,
+  resolveChatCustomerMessage,
   getScenario
 };

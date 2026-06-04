@@ -15,6 +15,7 @@ const {
   buildRealtimeInstructions,
   buildChatInstructions,
   inferChatStepPassed,
+  resolveChatCustomerMessage,
   getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
@@ -633,6 +634,15 @@ test("chat scripted response rule prevents adding later scripted beats", () => {
 
   const followUpStepInstructions = buildChatInstructions(scenario, 1);
   assert.match(followUpStepInstructions, /Current scripted response: "What happens if this order doesn't arrive on time\?"/);
+});
+
+test("chat scripted response resolver drops later beats from generated response", () => {
+  const generated =
+    "It's 1234 Elm Street in El Paso. What happens if this order doesn't arrive on time?";
+  const scripted = "It's 1234 Elm Street in El Paso.";
+
+  assert.strictEqual(resolveChatCustomerMessage(generated, scripted, true), scripted);
+  assert.strictEqual(resolveChatCustomerMessage(generated, scripted, false), generated);
 });
 
 test("chat scripted response is withheld when learner misses the current step", () => {
