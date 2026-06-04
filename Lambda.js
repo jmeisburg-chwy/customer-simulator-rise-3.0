@@ -864,6 +864,50 @@ ${beatLines}
 `.trim();
 }
 
+function getChatStepProgression(s) {
+  return Array.isArray(s?.simulation?.stateModel?.chatStepProgression)
+    ? s.simulation.stateModel.chatStepProgression
+    : Array.isArray(s?.chatConfig?.stepProgression)
+      ? s.chatConfig.stepProgression
+      : [];
+}
+
+function getChatStepConfig(s, currentStep) {
+  const stepProgression = getChatStepProgression(s);
+  return (
+    stepProgression.find((step) => Number(step?.id) === Number(currentStep)) ||
+    stepProgression[Number(currentStep)] ||
+    null
+  );
+}
+
+function evaluateChatStepCondition(text, condition) {
+  if (!condition || typeof condition !== "object") return false;
+  const op = String(condition.op || "").trim().toLowerCase();
+  const phrases = Array.isArray(condition.phrases) ? condition.phrases : [];
+
+  if (op === "contains_any") {
+    return phrases.some((phrase) => text.includes(String(phrase || "").toLowerCase()));
+  }
+
+  return false;
+}
+
+function inferChatStepPassed(s, currentStep, latestAgentMessage) {
+  const currentStepConfig = getChatStepConfig(s, currentStep);
+  const match = currentStepConfig?.match;
+  if (!match || typeof match !== "object") return true;
+
+  const allConditions = Array.isArray(match.all) ? match.all : [];
+  const anyConditions = Array.isArray(match.any) ? match.any : [];
+  if (!allConditions.length && !anyConditions.length) return true;
+
+  const normalized = String(latestAgentMessage || "").toLowerCase();
+  const allPassed = !allConditions.length || allConditions.every((condition) => evaluateChatStepCondition(normalized, condition));
+  const anyPassed = !anyConditions.length || anyConditions.some((condition) => evaluateChatStepCondition(normalized, condition));
+  return allPassed && anyPassed;
+}
+
 function buildRealtimeInstructions(s) {
   const between = getScenarioConversationContext(s);
   const f = getScenarioFacts(s);
@@ -971,16 +1015,7 @@ function buildChatInstructions(s, currentStep, options = {}) {
   const customerBehaviorRules = buildCustomerBehaviorRules(s);
   const stepPassed = options.stepPassed !== false;
 
-  const stepProgression = Array.isArray(s?.simulation?.stateModel?.chatStepProgression)
-    ? s.simulation.stateModel.chatStepProgression
-    : Array.isArray(s?.chatConfig?.stepProgression)
-      ? s.chatConfig.stepProgression
-      : [];
-
-  const currentStepConfig =
-    stepProgression.find((step) => Number(step?.id) === Number(currentStep)) ||
-    stepProgression[Number(currentStep)] ||
-    null;
+  const currentStepConfig = getChatStepConfig(s, currentStep);
 
   const currentStepLabel = String(currentStepConfig?.label || "").trim();
   const scriptedResponse = String(currentStepConfig?.customerResponse || "").trim();
@@ -1895,7 +1930,6 @@ exports.handler = async (event) => {
       }
 
       const currentStep = Number.isFinite(body.currentStep) ? body.currentStep : 0;
-      const stepPassed = typeof body.stepPassed === "boolean" ? body.stepPassed : true;
       const transcript = Array.isArray(body.transcript) ? body.transcript : [];
       const latestAgentMessage = String(body.latestAgentMessage || "").trim();
 
@@ -1903,6 +1937,10 @@ exports.handler = async (event) => {
         return json({ error: true, message: "Missing latestAgentMessage" }, 400);
       }
 
+      const stepPassed =
+        typeof body.stepPassed === "boolean"
+          ? body.stepPassed
+          : inferChatStepPassed(scenario, currentStep, latestAgentMessage);
       const system = buildChatInstructions(scenario, currentStep, { stepPassed });
 
       const responseSchema = {
@@ -1924,16 +1962,7 @@ exports.handler = async (event) => {
       ];
 
       // If the current turn has an active manager-approved scripted response, ask for higher verbosity.
-      const stepProgressionForChat = Array.isArray(scenario?.simulation?.stateModel?.chatStepProgression)
-        ? scenario.simulation.stateModel.chatStepProgression
-        : Array.isArray(scenario?.chatConfig?.stepProgression)
-          ? scenario.chatConfig.stepProgression
-          : [];
-
-      const currentStepCfgForChat =
-        stepProgressionForChat.find((step) => Number(step?.id) === Number(currentStep)) ||
-        stepProgressionForChat[Number(currentStep)] ||
-        null;
+      const currentStepCfgForChat = getChatStepConfig(scenario, currentStep);
 
       const hasScriptedCustomerResponse = stepPassed && Boolean(String(currentStepCfgForChat?.customerResponse || "").trim());
       const textVerbosity = hasScriptedCustomerResponse ? "high" : "low";
@@ -2362,5 +2391,6 @@ exports.__test = {
   buildScenarioClientConfig,
   buildRealtimeInstructions,
   buildChatInstructions,
+  inferChatStepPassed,
   getScenario
 };

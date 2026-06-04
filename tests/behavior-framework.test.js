@@ -14,6 +14,7 @@ const {
   buildScenarioClientConfig,
   buildRealtimeInstructions,
   buildChatInstructions,
+  inferChatStepPassed,
   getScenario
 } = require(path.join(repoRoot, "Lambda.js")).__test;
 
@@ -43,6 +44,7 @@ async function runTests() {
 function readJsonFixture(filename) {
   const candidates = [
     path.join("/Users/jmeisburg/Downloads", filename),
+    path.join("/Users/jmeisburg/Downloads/RRC", filename),
     path.join("/Users/jmeisburg/Downloads/scenario-1", filename),
     path.join(repoRoot, "fixtures", filename)
   ];
@@ -675,6 +677,46 @@ test("chat scripted response is withheld when learner misses the current step", 
   assert.match(instructions, /OFF-PATH RESPONSE RULE/);
   assert.match(instructions, /Do not use the manager-approved scripted response yet\./);
   assert.match(instructions, /Acknowledge and offer help/);
+});
+
+test("lambda infers chat step pass state when older clients omit it", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "server_side_step_inference_chat",
+    label: "Server Side Step Inference",
+    title: "Server Side Step Inference",
+    channels: ["chat"],
+    customer: {
+      opening: {
+        chat: "I need help with Larry's food."
+      },
+      persona: {
+        name: "Demarco",
+        tone: "Concerned"
+      }
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with Larry's food." }],
+        guideSections: []
+      }
+    },
+    chatConfig: {
+      stepProgression: [
+        {
+          id: 0,
+          label: "Acknowledge and offer help",
+          match: { any: [{ op: "contains_any", phrases: ["larry", "look into", "check the order"] }] },
+          customerResponse: "Thank you. I just want to be sure it gets here on time."
+        }
+      ]
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Problem Ownership", behaviors: ["Offers to help."] }]
+    }
+  });
+
+  assert.strictEqual(inferChatStepPassed(scenario, 0, "this is amazon wrong company!"), false);
+  assert.strictEqual(inferChatStepPassed(scenario, 0, "I can check the order for Larry."), true);
 });
 
 test("realtime voice instructions include runtime customer beats in order", () => {
