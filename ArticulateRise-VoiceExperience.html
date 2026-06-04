@@ -1457,6 +1457,10 @@ NOTES
     ];
 
     const transcriptTurns = [];
+    const realtimeTranscriptBuffers = {
+      agent: new Map(),
+      assistant: new Map()
+    };
     window.transcriptTurns = transcriptTurns;
 
     let sessionId = null;
@@ -1582,10 +1586,167 @@ NOTES
       return true;
     }
 
-    function addTurn(who, text) {
+    function normalizeTranscriptText(text) {
+      return String(text || "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function isSimilarTranscriptText(left, right) {
+      const a = normalizeTranscriptText(left);
+      const b = normalizeTranscriptText(right);
+      if (!a || !b) return false;
+      if (a === b) return true;
+      if (a.length >= 18 && b.length >= 18 && (a.includes(b) || b.includes(a))) return true;
+
+      const leftTokens = new Set(a.split(" ").filter(Boolean));
+      const rightTokens = new Set(b.split(" ").filter(Boolean));
+      if (!leftTokens.size || !rightTokens.size) return false;
+
+      let overlap = 0;
+      for (const token of leftTokens) {
+        if (rightTokens.has(token)) overlap += 1;
+      }
+      const smaller = Math.min(leftTokens.size, rightTokens.size);
+      return smaller >= 4 && overlap / smaller >= 0.82;
+    }
+
+    function isDuplicateTranscriptTurn(speaker, text, source, itemId) {
+      const normalizedSpeaker = String(speaker || "").trim().toLowerCase();
+      const t = String(text || "").trim();
+      if (!normalizedSpeaker || !t) return true;
+
+      if (itemId && transcriptTurns.some((turn) => turn.speaker === normalizedSpeaker && turn.item_id === itemId)) {
+        return true;
+      }
+
+      const currentTime = Date.now();
+      return transcriptTurns.some((turn) => {
+        if (turn.speaker !== normalizedSpeaker) return false;
+        if (!isSimilarTranscriptText(turn.text, t)) return false;
+        if (source === "browser_speech_recognition" && turn.source === "realtime_input_audio_transcription") return true;
+        const turnTime = Date.parse(turn.timestamp || "");
+        return Number.isFinite(turnTime) ? Math.abs(currentTime - turnTime) < 15000 : true;
+      });
+    }
+
+    function addTurn(speaker, text, options = {}) {
+      const normalizedSpeaker = String(speaker || "").trim().toLowerCase();
+      const resolvedSpeaker = normalizedSpeaker === "agent" ? "agent" : "customer";
       const t = String(text || "").trim();
       if (!t) return;
-      transcriptTurns.push({ who, text: t, t: now() });
+
+      const source = String(options.source || "unknown").trim() || "unknown";
+      const itemId = String(options.item_id || options.itemId || "").trim();
+      const timestamp = String(options.timestamp || now()).trim();
+
+      if (itemId) {
+        const existing = transcriptTurns.find((turn) => turn.speaker === resolvedSpeaker && turn.item_id === itemId);
+        if (existing) {
+          if (normalizeTranscriptText(t).length >= normalizeTranscriptText(existing.text).length) {
+            existing.text = t;
+            existing.timestamp = timestamp;
+            existing.source = source;
+          }
+          return;
+        }
+      }
+
+      if (source === "realtime_input_audio_transcription") {
+        const browserFallback = transcriptTurns.find((turn) =>
+          turn.speaker === resolvedSpeaker &&
+          turn.source === "browser_speech_recognition" &&
+          isSimilarTranscriptText(turn.text, t)
+        );
+        if (browserFallback) {
+          browserFallback.text = t;
+          browserFallback.timestamp = timestamp;
+          browserFallback.source = source;
+          browserFallback.item_id = itemId;
+          return;
+        }
+      }
+
+      if (isDuplicateTranscriptTurn(resolvedSpeaker, t, source, itemId)) return;
+
+      transcriptTurns.push({
+        speaker: resolvedSpeaker,
+        text: t,
+        timestamp,
+        source,
+        item_id: itemId
+      });
+    }
+
+    function clearTranscriptState() {
+      transcriptTurns.length = 0;
+      realtimeTranscriptBuffers.agent.clear();
+      realtimeTranscriptBuffers.assistant.clear();
+    }
+
+    function getRealtimeItemId(msg) {
+      return String(
+        msg?.item_id ||
+        msg?.itemId ||
+        msg?.item?.id ||
+        msg?.output_item_id ||
+        msg?.outputItemId ||
+        ""
+      ).trim();
+    }
+
+    function getRealtimeTranscriptText(msg) {
+      if (typeof msg?.transcript === "string") return msg.transcript;
+      if (typeof msg?.text === "string") return msg.text;
+      if (typeof msg?.delta === "string") return msg.delta;
+
+      const content = Array.isArray(msg?.item?.content) ? msg.item.content : [];
+      return content
+        .map((part) => String(part?.transcript || part?.text || "").trim())
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    function getTranscriptBuffer(speaker) {
+      return speaker === "agent" ? realtimeTranscriptBuffers.agent : realtimeTranscriptBuffers.assistant;
+    }
+
+    function appendRealtimeTranscriptDelta(speaker, msg, source) {
+      const delta = String(msg?.delta || "").trim();
+      if (!delta) return;
+
+      const itemId = getRealtimeItemId(msg) || `${speaker}:${source}:active`;
+      const buffer = getTranscriptBuffer(speaker);
+      const current = buffer.get(itemId) || { text: "", item_id: itemId };
+      current.text += delta;
+      current.item_id = itemId;
+      buffer.set(itemId, current);
+    }
+
+    function completeRealtimeTranscript(speaker, msg, source) {
+      const itemId = getRealtimeItemId(msg) || `${speaker}:${source}:active`;
+      const buffer = getTranscriptBuffer(speaker);
+      const buffered = buffer.get(itemId);
+      const completedText = getRealtimeTranscriptText(msg);
+      const text = String(completedText || buffered?.text || "").trim();
+
+      if (text) {
+        addTurn(speaker, text, { source, item_id: itemId });
+      }
+
+      buffer.delete(itemId);
+    }
+
+    function flushRealtimeTranscriptBuffers(speaker, source) {
+      const buffer = getTranscriptBuffer(speaker);
+      for (const [itemId, entry] of buffer.entries()) {
+        const text = String(entry?.text || "").trim();
+        if (text) addTurn(speaker, text, { source, item_id: itemId });
+        buffer.delete(itemId);
+      }
     }
 
     function getScenarioId() { return ACTIVE_SCENARIO_ID; }
@@ -2246,7 +2407,7 @@ NOTES
           const res = e.results[i];
           if (res.isFinal) finalText += res[0].transcript.trim() + " ";
         }
-        if (finalText) addTurn("agent", finalText.trim());
+        if (finalText) addTurn("agent", finalText.trim(), { source: "browser_speech_recognition" });
       };
 
       recognition.onend = () => { if (recognizing) recognition.start(); };
@@ -2274,7 +2435,10 @@ NOTES
 
     function joinTurnsToTranscriptText(turns) {
       return (turns || [])
-        .map(t => `${t.who === "agent" ? "Agent" : "Customer"}: ${t.text}`)
+        .filter((turn) => turn && String(turn.text || "").trim())
+        .slice()
+        .sort((a, b) => String(a.timestamp || "").localeCompare(String(b.timestamp || "")))
+        .map((turn) => `${turn.speaker === "agent" ? "Agent" : "Customer"}: ${String(turn.text || "").trim()}`)
         .join("\n")
         .trim();
     }
@@ -2429,14 +2593,6 @@ NOTES
     function attachRealtimeMessageHandlers(channel) {
       if (!channel) return;
 
-      let customerBuffer = "";
-
-      const flushCustomer = () => {
-        const t = customerBuffer.trim();
-        if (t) addTurn("customer", t);
-        customerBuffer = "";
-      };
-
       channel.onmessage = (e) => {
         let msg; try { msg = JSON.parse(e.data); } catch { return; }
         const type = String(msg.type || "");
@@ -2466,50 +2622,59 @@ NOTES
         }
 
         if (type === "response.done" || type === "response.completed") {
-          flushCustomer();
+          flushRealtimeTranscriptBuffers("customer", "realtime_assistant_transcript");
           setStatus("Connected. Start talking.");
           return;
         }
 
+        if (type === "conversation.item.input_audio_transcription.delta") {
+          appendRealtimeTranscriptDelta("agent", msg, "realtime_input_audio_transcription");
+          return;
+        }
+        if (type === "conversation.item.input_audio_transcription.completed") {
+          completeRealtimeTranscript("agent", msg, "realtime_input_audio_transcription");
+          return;
+        }
+
         if (type === "response.output_text.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.output_text.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.output_audio_transcript.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.output_audio_transcript.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.audio_transcript.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.audio_transcript.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if ((type.endsWith("transcript.delta") || type.endsWith("transcript.text.delta")) && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type.endsWith("transcript.done") || type.endsWith("transcript.text.done")) {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.message" && msg.role === "assistant" && Array.isArray(msg.content)) {
           const t = msg.content.map(c => c && c.text ? c.text : "").filter(Boolean).join(" ").trim();
-          if (t) addTurn("customer", t);
+          if (t) addTurn("customer", t, { source: "realtime_assistant_transcript", item_id: getRealtimeItemId(msg) });
           return;
         }
       };
@@ -2602,7 +2767,7 @@ NOTES
       coachContainer.hidden = true;
       coachContainer.classList.remove('reveal');
       coachEl.textContent = "After the call ends, your coaching will appear here.";
-      transcriptTurns.length = 0;
+      clearTranscriptState();
 
       expandGuide();
       showGuide();
@@ -2770,7 +2935,7 @@ NOTES
 
         coachEl.innerHTML = rendered;
         setStatus("Coaching ready.");
-        transcriptTurns.length = 0;
+        clearTranscriptState();
         startBtn.disabled = false;
         coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
@@ -2798,7 +2963,7 @@ NOTES
           errorText: ""
         });
 
-        transcriptTurns.length = 0;
+        clearTranscriptState();
         startBtn.disabled = false;
         coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
@@ -2831,14 +2996,14 @@ NOTES
         errorText: msg
       });
 
-      transcriptTurns.length = 0;
+      clearTranscriptState();
       startBtn.disabled = false;
       coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function resetForNewAttempt() {
       evaluationRetryCancelled = false;
-      transcriptTurns.length = 0;
+      clearTranscriptState();
       sessionId = null;
       startedAt = null;
       try { STORE.removeItem(getVoiceStorageKey()); } catch (_) { }

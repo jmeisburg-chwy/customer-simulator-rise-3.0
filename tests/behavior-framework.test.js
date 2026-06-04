@@ -442,6 +442,47 @@ test("voice experience supports configurable scenarioId and fails clearly when m
   assert.match(voiceHtml, /renderScenarioUnavailable\(MISSING_SCENARIO_ID_MESSAGE\)/);
 });
 
+test("voice transcript turns are structured and normalized before evaluation", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  assert.match(voiceHtml, /function normalizeTranscriptText\(text\)/);
+  assert.match(voiceHtml, /function addTurn\(speaker, text, options = \{\}\)/);
+  assert.match(voiceHtml, /speaker: resolvedSpeaker/);
+  assert.match(voiceHtml, /text: t/);
+  assert.match(voiceHtml, /timestamp/);
+  assert.match(voiceHtml, /source/);
+  assert.match(voiceHtml, /item_id: itemId/);
+  assert.match(voiceHtml, /function joinTurnsToTranscriptText\(turns\)/);
+  assert.match(voiceHtml, /sort\(\(a, b\) => String\(a\.timestamp \|\| ""\)\.localeCompare\(String\(b\.timestamp \|\| ""\)\)\)/);
+  assert.match(voiceHtml, /turn\.speaker === "agent" \? "Agent" : "Customer"/);
+});
+
+test("voice transcript capture uses Realtime input transcription with browser speech as deduped fallback", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  assert.match(voiceHtml, /conversation\.item\.input_audio_transcription\.delta/);
+  assert.match(voiceHtml, /conversation\.item\.input_audio_transcription\.completed/);
+  assert.match(voiceHtml, /"realtime_input_audio_transcription"/);
+  assert.match(voiceHtml, /"browser_speech_recognition"/);
+  assert.match(voiceHtml, /function isDuplicateTranscriptTurn\(speaker, text, source, itemId\)/);
+  assert.match(voiceHtml, /function isSimilarTranscriptText\(left, right\)/);
+  assert.match(voiceHtml, /if \(source === "realtime_input_audio_transcription"\)/);
+  assert.match(voiceHtml, /turn\.source === "browser_speech_recognition"/);
+  assert.match(voiceHtml, /if \(isDuplicateTranscriptTurn\(resolvedSpeaker, t, source, itemId\)\) return;/);
+});
+
+test("voice customer transcripts are captured from Realtime assistant transcript events by item id", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  assert.match(voiceHtml, /const realtimeTranscriptBuffers = \{/);
+  assert.match(voiceHtml, /assistant: new Map\(\)/);
+  assert.match(voiceHtml, /function getRealtimeItemId\(msg\)/);
+  assert.match(voiceHtml, /function appendRealtimeTranscriptDelta\(speaker, msg, source\)/);
+  assert.match(voiceHtml, /function completeRealtimeTranscript\(speaker, msg, source\)/);
+  assert.match(voiceHtml, /"realtime_assistant_transcript"/);
+  assert.match(voiceHtml, /addTurn\(speaker, text, \{ source, item_id: itemId \}\)/);
+});
+
 test("rise frontends do not require platform-only scripts or local platform assets", () => {
   const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
   const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
@@ -532,6 +573,16 @@ test("lambda evaluation schema asks for checklist criteria and richer summary po
   assert.match(lambda, /what_to_strengthen_next_points/);
   assert.match(lambda, /observed/);
   assert.match(lambda, /rationale/);
+});
+
+test("lambda realtime session requests input audio transcription for voice agent turns", () => {
+  const lambda = fs.readFileSync(path.join(repoRoot, "Lambda.js"), "utf8");
+
+  assert.match(lambda, /input:\s*\{[\s\S]*turn_detection:\s*REALTIME_TURN_DETECTION/);
+  assert.match(lambda, /transcription:\s*\{/);
+  assert.match(lambda, /model:\s*"gpt-realtime-whisper"/);
+  assert.match(lambda, /language:\s*"en"/);
+  assert.match(lambda, /delay:\s*"medium"/);
 });
 
 test("sample scenario JSON is a single scenario object and normalizes successfully", () => {

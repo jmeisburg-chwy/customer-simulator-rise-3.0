@@ -1888,7 +1888,12 @@ exports.handler = async (event) => {
           output_modalities: ["audio"],
           audio: {
             input: {
-              turn_detection: REALTIME_TURN_DETECTION
+              turn_detection: REALTIME_TURN_DETECTION,
+              transcription: {
+                model: "gpt-realtime-whisper",
+                language: "en",
+                delay: "medium"
+              }
             },
             output: {
               voice
