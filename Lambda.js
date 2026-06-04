@@ -964,11 +964,12 @@ ${f.closingLine ? `- Closing line: "${f.closingLine}"` : ""}
 `.trim();
 }
 
-function buildChatInstructions(s, currentStep) {
+function buildChatInstructions(s, currentStep, options = {}) {
   const between = getScenarioConversationContext(s);
   const f = getScenarioFacts(s);
   const v = f.verification || {};
   const customerBehaviorRules = buildCustomerBehaviorRules(s);
+  const stepPassed = options.stepPassed !== false;
 
   const stepProgression = Array.isArray(s?.simulation?.stateModel?.chatStepProgression)
     ? s.simulation.stateModel.chatStepProgression
@@ -981,8 +982,9 @@ function buildChatInstructions(s, currentStep) {
     stepProgression[Number(currentStep)] ||
     null;
 
+  const currentStepLabel = String(currentStepConfig?.label || "").trim();
   const scriptedResponse = String(currentStepConfig?.customerResponse || "").trim();
-  const scriptedResponseBlock = scriptedResponse
+  const scriptedResponseBlock = scriptedResponse && stepPassed
     ? `SCRIPTED RESPONSE RULE
 - For the current step, a manager-approved customer response exists.
 - Use that response exactly or extremely closely.
@@ -993,6 +995,16 @@ function buildChatInstructions(s, currentStep) {
 - This scripted response overrides the closing line, general closing guidance, and generic customer behavior rules.
 - Only make tiny wording adjustments if the learner's message makes the exact wording unnatural.
 - Current scripted response: "${scriptedResponse}"`
+    : "";
+  const offPathResponseBlock = scriptedResponse && !stepPassed
+    ? `OFF-PATH RESPONSE RULE
+- The learner has not yet completed the expected action for the current step.
+- Do not use the manager-approved scripted response yet.
+- Do not reveal later facts, addresses, refund choices, tracking outcomes, closing lines, or later customer questions.
+- Respond naturally to the learner's latest message as the customer.
+- Stay on the current scenario beat and give a brief, realistic prompt that helps the learner recover.
+- If the learner's message is unclear, very short, or nonsensical, say you are not sure you understand and restate the current customer need in character.
+${currentStepLabel ? `- Current step label: ${currentStepLabel}` : ""}`
     : "";
 
   const factsBlock = [
@@ -1024,7 +1036,7 @@ The learner roleplays as the ${between.participantRole || "Chewy agent"}.
 
 CHAT STYLE RULES
 - Reply like a real customer in live chat.
-- Keep responses concise, usually 1 to 3 short sentences unless a manager-approved scripted response exists for the current step.
+- Keep responses concise, usually 1 to 3 short sentences unless a manager-approved scripted response is active for the current turn.
 - Do not give coaching.
 - Do not narrate.
 - Do not break character.
@@ -1042,6 +1054,7 @@ CURRENT STEP
 - Current step number: ${currentStep}
 
 ${scriptedResponseBlock}
+${offPathResponseBlock}
 
 FACTS YOU MUST STICK TO
 ${factsBlock || "- (No structured facts provided)"}
@@ -1882,6 +1895,7 @@ exports.handler = async (event) => {
       }
 
       const currentStep = Number.isFinite(body.currentStep) ? body.currentStep : 0;
+      const stepPassed = typeof body.stepPassed === "boolean" ? body.stepPassed : true;
       const transcript = Array.isArray(body.transcript) ? body.transcript : [];
       const latestAgentMessage = String(body.latestAgentMessage || "").trim();
 
@@ -1889,7 +1903,7 @@ exports.handler = async (event) => {
         return json({ error: true, message: "Missing latestAgentMessage" }, 400);
       }
 
-      const system = buildChatInstructions(scenario, currentStep);
+      const system = buildChatInstructions(scenario, currentStep, { stepPassed });
 
       const responseSchema = {
         type: "object",
@@ -1909,7 +1923,7 @@ exports.handler = async (event) => {
         }))
       ];
 
-      // If the current step has a manager-approved scripted response, ask for higher verbosity
+      // If the current turn has an active manager-approved scripted response, ask for higher verbosity.
       const stepProgressionForChat = Array.isArray(scenario?.simulation?.stateModel?.chatStepProgression)
         ? scenario.simulation.stateModel.chatStepProgression
         : Array.isArray(scenario?.chatConfig?.stepProgression)
@@ -1921,7 +1935,7 @@ exports.handler = async (event) => {
         stepProgressionForChat[Number(currentStep)] ||
         null;
 
-      const hasScriptedCustomerResponse = Boolean(String(currentStepCfgForChat?.customerResponse || "").trim());
+      const hasScriptedCustomerResponse = stepPassed && Boolean(String(currentStepCfgForChat?.customerResponse || "").trim());
       const textVerbosity = hasScriptedCustomerResponse ? "high" : "low";
 
       const openAIResult = await fetchOpenAITextWithRetry(

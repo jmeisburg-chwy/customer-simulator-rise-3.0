@@ -497,6 +497,7 @@ test("chat frontend sends the matched step to Lambda before advancing progressio
   const customerReplyBlock = chatHtml.match(/async function getCustomerReply[\s\S]*?async function getEvaluation/);
   assert.ok(customerReplyBlock, "getCustomerReply block not found");
   assert.match(customerReplyBlock[0], /currentStep: responseStep/);
+  assert.match(customerReplyBlock[0], /currentStep: responseStep,\s*stepPassed,/);
   assert.match(customerReplyBlock[0], /FALLBACK_CUSTOMER_REPLIES\[Math\.min\(responseStep,/);
 });
 
@@ -630,6 +631,50 @@ test("chat scripted response rule prevents adding later scripted beats", () => {
 
   const followUpStepInstructions = buildChatInstructions(scenario, 1);
   assert.match(followUpStepInstructions, /Current scripted response: "What happens if this order doesn't arrive on time\?"/);
+});
+
+test("chat scripted response is withheld when learner misses the current step", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "scripted_off_path_chat",
+    label: "Scripted Off Path",
+    title: "Scripted Off Path",
+    channels: ["chat"],
+    customer: {
+      opening: {
+        chat: "I need help with Larry's food."
+      },
+      persona: {
+        name: "Demarco",
+        tone: "Concerned"
+      }
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with Larry's food." }],
+        guideSections: []
+      }
+    },
+    chatConfig: {
+      stepProgression: [
+        {
+          id: 0,
+          label: "Acknowledge and offer help",
+          match: { any: [{ op: "contains_any", phrases: ["happy to help", "look into"] }] },
+          customerResponse: "Thank you. I just want to be sure it gets here on time."
+        }
+      ]
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Problem Ownership", behaviors: ["Offers to help."] }]
+    }
+  });
+
+  const instructions = buildChatInstructions(scenario, 0, { stepPassed: false });
+  assert.doesNotMatch(instructions, /SCRIPTED RESPONSE RULE/);
+  assert.doesNotMatch(instructions, /Current scripted response:/);
+  assert.match(instructions, /OFF-PATH RESPONSE RULE/);
+  assert.match(instructions, /Do not use the manager-approved scripted response yet\./);
+  assert.match(instructions, /Acknowledge and offer help/);
 });
 
 test("realtime voice instructions include runtime customer beats in order", () => {

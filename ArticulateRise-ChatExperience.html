@@ -3187,6 +3187,7 @@ NOTES
         sessionId,
         latestAgentMessage,
         currentStep: responseStep,
+        stepPassed,
         transcript: transcript.map((turn) => ({
           role: normalizeRoleForApi(turn.role),
           content: turn.content
