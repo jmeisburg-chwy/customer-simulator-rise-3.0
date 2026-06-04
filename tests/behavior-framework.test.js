@@ -614,6 +614,31 @@ test("chat frontend sends the matched step to Lambda before advancing progressio
   assert.match(customerReplyBlock[0], /FALLBACK_CUSTOMER_REPLIES\[Math\.min\(responseStep,/);
 });
 
+test("chat frontend evaluates grouped all and any progression rules", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const evaluateBlock = chatHtml.match(/function evaluateBackendStep\(message, step\) \{[\s\S]*?function evaluateCurrentStep/);
+
+  assert.ok(evaluateBlock, "evaluateBackendStep block not found");
+  assert.match(evaluateBlock[0], /allConditions\.every\(\(condition\) => evaluateStepCondition\(normalized, condition\)\)/);
+  assert.match(evaluateBlock[0], /anyConditions\.some\(\(condition\) => evaluateStepCondition\(normalized, condition\)\)/);
+  assert.match(evaluateBlock[0], /return allPassed && anyPassed;/);
+});
+
+test("chat frontend fallback step logic contains no unrelated delivery scenario details", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const start = chatHtml.indexOf("const STEP_CONFIG = [");
+  const end = chatHtml.indexOf("const FALLBACK_CUSTOMER_REPLIES", start);
+
+  assert.notStrictEqual(start, -1, "STEP_CONFIG fallback block start not found");
+  assert.notStrictEqual(end, -1, "STEP_CONFIG fallback block end not found");
+
+  const fallbackBlock = chatHtml.slice(start, end);
+  assert.doesNotMatch(fallbackBlock, /\blarry\b/i);
+  assert.doesNotMatch(fallbackBlock, /\belm street\b/i);
+  assert.doesNotMatch(fallbackBlock, /\bel paso\b/i);
+  assert.doesNotMatch(fallbackBlock, /\btuesday\b/i);
+});
+
 test("scenario client config preserves scripted chat customer responses", () => {
   const scenario = normalizeUploadedScenario({
     id: "scripted_chat",
@@ -837,6 +862,63 @@ test("lambda infers chat step pass state when older clients omit it", () => {
 
   assert.strictEqual(inferChatStepPassed(scenario, 0, "this is amazon wrong company!"), false);
   assert.strictEqual(inferChatStepPassed(scenario, 0, "I can check the order for Larry."), true);
+});
+
+test("late delivery chat progression requires complete learner behaviors for key beats", () => {
+  const scenario = normalizeUploadedScenario(
+    JSON.parse(fs.readFileSync(path.join(repoRoot, "scenarios", "late_delivery_20_partial_refund_chat.json"), "utf8"))
+  );
+
+  assert.strictEqual(scenario.id, LATE_DELIVERY_CHAT_SCENARIO_ID);
+  assert.strictEqual(scenario.channels.join(","), "chat");
+
+  const assertStep = (step, positive, negatives) => {
+    assert.strictEqual(inferChatStepPassed(scenario, step, positive), true, `expected step ${step} to pass`);
+    for (const negative of negatives) {
+      assert.strictEqual(inferChatStepPassed(scenario, step, negative), false, `expected step ${step} to fail: ${negative}`);
+    }
+  };
+
+  assertStep(1, "Could you confirm the shipping address on this order before I continue?", [
+    "I'm checking your order now.",
+    "I see the order for Fluffy's cat litter."
+  ]);
+
+  assertStep(
+    2,
+    "I verified 3948 Simpson Road. Severe weather near the fulfillment center delayed outbound deliveries, and tracking now shows it is scheduled to arrive tomorrow by end of day.",
+    [
+      "I verified 3948 Simpson Road and the delay was caused by severe weather near the fulfillment center.",
+      "I verified 3948 Simpson Road and it is scheduled to arrive tomorrow by end of day."
+    ]
+  );
+
+  assertStep(
+    4,
+    "I can offer the required 20% partial refund either back to your original payment method or as Chewy account credit, whichever you prefer.",
+    [
+      "I can offer a 20% partial refund back to your card.",
+      "I can place the refund on your original payment method or as Chewy account credit."
+    ]
+  );
+
+  assertStep(
+    5,
+    "I'll process that back to your original payment method now, and it should appear in 3 to 5 business days.",
+    [
+      "I'll process that back to your original payment method now.",
+      "It should appear in 3 to 5 business days."
+    ]
+  );
+
+  assertStep(
+    6,
+    "Your order is still scheduled to arrive tomorrow by end of day, and if it does not arrive then, please reach back out so we can help.",
+    [
+      "Your order is still scheduled to arrive tomorrow by end of day.",
+      "If it does not arrive then, please reach back out so we can help."
+    ]
+  );
 });
 
 test("realtime voice instructions include runtime customer beats in order", () => {

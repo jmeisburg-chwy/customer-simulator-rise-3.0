@@ -1837,52 +1837,61 @@ NOTES
         id: 0,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["sorry", "understand", "happy to help", "help you", "look into", "check"]) && containsAny(m, ["food", "pet", "larry", "worry", "concern"]);
+          return containsAny(m, ["sorry", "understand", "frustrating", "glad you reached out", "look into", "check on"]) && containsAny(m, ["munsen", "fluffy", "cat litter", "order"]);
         }
       },
       {
         id: 1,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["address", "verify", "confirm", "shipping"]) || containsAny(m, ["track", "tracking", "tuesday", "delivery date"]);
+          return containsAny(m, ["confirm", "verify", "provide", "share", "tell me", "can i have", "could you give me", "could you confirm", "could you verify"]) && containsAny(m, ["shipping address", "address on the order", "delivery address", "address"]);
         }
       },
       {
         id: 2,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["confirmed", "verified", "looks correct", "everything looks correct", "address", "elm street", "el paso"]);
+          return containsAny(m, ["3948 simpson road", "3948 simpson rd", "verified", "confirmed"]) && containsAny(m, ["weather", "fulfillment center", "shipping route", "outbound deliveries", "delay"]) && containsAny(m, ["tomorrow", "end of day", "scheduled to arrive", "updated delivery"]);
         }
       },
       {
         id: 3,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["tracking details", "estimated delivery window", "larry’s food", "larry's food", "1-3 days", "1 to 3 days", "track it more closely"]);
+          return containsAny(m, ["frustrating", "unfair", "understand", "not in your area", "not local", "apologize"]) && containsAny(m, ["make this right", "take care", "resolution", "partial refund", "refund"]);
         }
       },
       {
         id: 4,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["if it doesn't arrive", "if it does not arrive", "if it doesn’t arrive", "reach back out", "contact us", "let us know", "tuesday"]);
+          return containsAny(m, ["20 percent", "20%", "twenty percent"]) && containsAny(m, ["original payment method", "back to your card", "back to the card", "card"]) && containsAny(m, ["chewy account", "account credit", "chewy credit", "future use"]);
         }
       },
       {
         id: 5,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["anything else", "all set", "glad to help", "on track", "help with today", "larry’s food is on its way", "larry's food is on its way"]);
+          return containsAny(m, ["processed", "original payment method", "back to your card", "back to the card", "card"]) && containsAny(m, ["3 to 5 business days", "3-5 business days", "three to five business days"]);
+        }
+      },
+      {
+        id: 6,
+        successCheck(message) {
+          const m = message.toLowerCase();
+          return containsAny(m, ["tomorrow by end of day", "scheduled to arrive tomorrow", "arrive tomorrow", "delivery tomorrow", "3948 simpson road"]) && containsAny(m, ["if it does not arrive", "if it doesn't arrive", "if it doesn’t arrive", "reach back out", "contact us", "let us know"]);
         }
       }
     ];
 
     const FALLBACK_CUSTOMER_REPLIES = [
-      "Thank you. I just want to make sure everything is still on track.",
-      "Sure, I can confirm that information.",
-      "Okay, thanks for checking that.",
+      "Yes, that's the one.",
+      "Sure, it's 3948 Simpson Rd.",
+      "Why is that my problem? There's no weather where I live! You should have shipped it from another location.",
       "What should I do if there is still a problem?",
-      "That helps a lot. Thank you."
+      "Please credit it back to the card.",
+      "Okay, thank you.",
+      "Thanks, that covers everything."
     ];
 
     const viewportEl = document.getElementById("viewport");
