@@ -23,6 +23,9 @@ const HOSTED_COACH_CHEWY_URL = "https://pub-f427f39912f4461691149d76a2e41031.r2.
 const HOSTED_COACH_CHEWY_RE = new RegExp(HOSTED_COACH_CHEWY_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 const LATE_DELIVERY_SCENARIO_ID = "late_delivery_20_partial_refund";
 const LATE_DELIVERY_CHAT_SCENARIO_ID = "late_delivery_20_partial_refund_chat";
+const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+const REQUIRED_SCENARIO_MESSAGE =
+  "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
 
 const tests = [];
 
@@ -377,17 +380,66 @@ test("chat coaching report uses the updated learner-facing report layout", () =>
   assert.doesNotMatch(chatHtml, /item\.open\s*=\s*!!isFocus/);
 });
 
-test("chat and voice default to the late delivery partial refund scenario", () => {
+test("chat and voice require an explicit scenario id instead of using baked-in scenario fallbacks", () => {
   const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
   const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
 
-  assert.match(chatHtml, new RegExp(`const SCENARIO_OVERRIDE = "${LATE_DELIVERY_CHAT_SCENARIO_ID}"`));
-  assert.match(voiceHtml, new RegExp(`const SCENARIO_OVERRIDE = "${LATE_DELIVERY_SCENARIO_ID}"`));
-  assert.match(chatHtml, new RegExp(`const DEFAULT_SCENARIO_ID = "${LATE_DELIVERY_CHAT_SCENARIO_ID}"`));
-  assert.match(voiceHtml, new RegExp(`const DEFAULT_SCENARIO_ID = "${LATE_DELIVERY_SCENARIO_ID}"`));
+  assert.match(chatHtml, /const SCENARIO_OVERRIDE = ""/);
+  assert.match(voiceHtml, /const SCENARIO_OVERRIDE = ""/);
+  assert.doesNotMatch(chatHtml, /DEFAULT_SCENARIO_ID/);
+  assert.doesNotMatch(voiceHtml, /DEFAULT_SCENARIO_ID/);
   assert.match(chatHtml, /const STATIC_CHAT_INSTRUCTIONS = \[/);
-  assert.doesNotMatch(chatHtml, /const DEFAULT_SCENARIO_ID = "id":/);
-  assert.doesNotMatch(voiceHtml, /const DEFAULT_SCENARIO_ID = "id":/);
+  assert.match(chatHtml, new RegExp(REQUIRED_SCENARIO_MESSAGE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(voiceHtml, new RegExp(REQUIRED_SCENARIO_MESSAGE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("chat experience supports configurable apiBase", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+
+  assert.match(chatHtml, new RegExp(`const DEFAULT_API_BASE = "${DEFAULT_API_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+  assert.match(chatHtml, /new URLSearchParams\(window\.location\.search\)\.get\("apiBase"\)/);
+  assert.match(chatHtml, /getRuntimeConfigValue\("apiBase"\)/);
+  assert.match(chatHtml, /const SESSION_BASE = resolveApiBase\(\)/);
+});
+
+test("voice experience supports configurable apiBase", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  assert.match(voiceHtml, new RegExp(`const DEFAULT_API_BASE = "${DEFAULT_API_BASE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+  assert.match(voiceHtml, /new URLSearchParams\(window\.location\.search\)\.get\("apiBase"\)/);
+  assert.match(voiceHtml, /getRuntimeConfigValue\("apiBase"\)/);
+  assert.match(voiceHtml, /const SESSION_BASE = resolveApiBase\(\)/);
+});
+
+test("chat experience supports configurable scenarioId and fails clearly when missing", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const queryIndex = chatHtml.indexOf('get("scenarioId")');
+  const configIndex = chatHtml.indexOf('getRuntimeConfigValue("scenarioId")');
+  const overrideIndex = chatHtml.indexOf("String(SCENARIO_OVERRIDE");
+  const initializeIndex = chatHtml.indexOf("async function initializeChatExperience()");
+  const missingIndex = chatHtml.indexOf("if (!SCENARIO_ID)", initializeIndex);
+  const loadIndex = chatHtml.indexOf("loadScenarioDisplayConfig()", initializeIndex);
+
+  assert.ok(queryIndex > -1, "chat query scenarioId lookup missing");
+  assert.ok(configIndex > queryIndex, "chat config scenarioId should be checked after query scenarioId");
+  assert.ok(overrideIndex > configIndex, "chat SCENARIO_OVERRIDE should be checked after window config scenarioId");
+  assert.ok(missingIndex > -1 && missingIndex < loadIndex, "chat missing scenario guard should run before scenario loading");
+  assert.match(chatHtml, /renderScenarioUnavailable\(MISSING_SCENARIO_ID_MESSAGE\)/);
+});
+
+test("voice experience supports configurable scenarioId and fails clearly when missing", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+  const queryIndex = voiceHtml.indexOf('get("scenarioId")');
+  const configIndex = voiceHtml.indexOf('getRuntimeConfigValue("scenarioId")');
+  const overrideIndex = voiceHtml.indexOf("String(SCENARIO_OVERRIDE");
+  const missingIndex = voiceHtml.indexOf("if (!ACTIVE_SCENARIO_ID)");
+  const loadIndex = voiceHtml.indexOf("fetchJSON(SCENARIOS_URL");
+
+  assert.ok(queryIndex > -1, "voice query scenarioId lookup missing");
+  assert.ok(configIndex > queryIndex, "voice config scenarioId should be checked after query scenarioId");
+  assert.ok(overrideIndex > configIndex, "voice SCENARIO_OVERRIDE should be checked after window config scenarioId");
+  assert.ok(missingIndex > -1 && missingIndex < loadIndex, "voice missing scenario guard should run before scenario loading");
+  assert.match(voiceHtml, /renderScenarioUnavailable\(MISSING_SCENARIO_ID_MESSAGE\)/);
 });
 
 test("rise frontends do not require platform-only scripts or local platform assets", () => {

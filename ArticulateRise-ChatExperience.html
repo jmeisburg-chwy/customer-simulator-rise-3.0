@@ -3,22 +3,32 @@ CHEWY CUSTOMER SIMULATOR: CHAT EXPERIENCE
 
 HOW TO USE
 1. Upload/paste this file into your Articulate Rise block for the chat experience.
-2. Set SESSION_BASE to your AWS API base URL.
-3. Set SCENARIO_OVERRIDE to the scenario id you want to run.
-4. This file currently selects late_delivery_20_partial_refund_chat directly.
+2. Provide a scenario id for each Rise activity. The simulator will not start without one.
+3. To use a test backend, pass apiBase in the URL or set window.CCS_CONFIG.apiBase.
+4. To use the live backend, omit apiBase so the baked-in DEFAULT_API_BASE is used.
 
 WHAT TO EDIT
-- SESSION_BASE = your API Gateway base URL
-- SCENARIO_OVERRIDE = your scenario id from Lambda.js
+- DEFAULT_API_BASE = the safe fallback API Gateway base URL for this package.
+- SCENARIO_OVERRIDE = leave blank unless this package must be locked to one scenario.
 
 EXAMPLE
-const SESSION_BASE = "https://your-api-id.execute-api.us-east-2.amazonaws.com";
-const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
+URL configuration:
+  ArticulateRise-ChatExperience.html?apiBase=https://test-api-id.execute-api.us-east-2.amazonaws.com&scenarioId=late_delivery_20_partial_refund_chat
+
+Host-page configuration before this script runs:
+  window.CCS_CONFIG = {
+    apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
+    scenarioId: "late_delivery_20_partial_refund_chat"
+  };
+
+Locked-package configuration:
+  const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
 
 NOTES
 - This file is chat-only.
 - Scenario content, hotkeys, guide content, and progression come from Lambda.
-- To use a different scenario, change only SCENARIO_OVERRIDE.
+- Every Rise activity should provide its own scenarioId from the S3 scenario library.
+- Missing scenarioId intentionally shows "Scenario unavailable" and stops startup.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -1769,21 +1779,41 @@ NOTES
       pill.textContent = chatAccordion.open ? closeLabel : openLabel;
     }
 
-    const SESSION_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const SCENARIO_OVERRIDE = "";
+    const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
+
+    function getRuntimeConfigValue(key) {
+      const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
+      return String(config[key] || "").trim();
+    }
+
+    function resolveApiBase() {
+      const urlApiBase = String(new URLSearchParams(window.location.search).get("apiBase") || "").trim();
+      const configuredApiBase = getRuntimeConfigValue("apiBase");
+      return String(urlApiBase || configuredApiBase || DEFAULT_API_BASE).trim().replace(/\/+$/g, "");
+    }
+
+    function resolveScenarioId() {
+      const urlScenarioId = String(new URLSearchParams(window.location.search).get("scenarioId") || "").trim();
+      if (urlScenarioId) return urlScenarioId;
+
+      const configuredScenarioId = getRuntimeConfigValue("scenarioId");
+      if (configuredScenarioId) return configuredScenarioId;
+
+      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
+      if (explicitOverride) return explicitOverride;
+
+      return "";
+    }
+
+    const SESSION_BASE = resolveApiBase();
     const SCENARIO_CONFIG_URL = SESSION_BASE + "/scenario";
     const CHAT_API_URL = SESSION_BASE + "/chat-turn";
     const EVAL_API_URL = SESSION_BASE + "/evaluate";
     const SAVE_API_URL = SESSION_BASE + "/coaching";
 
-    const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
-    const DEFAULT_SCENARIO_ID = "late_delivery_20_partial_refund_chat";
-    const SCENARIO_ID = (() => {
-      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
-      if (explicitOverride) return explicitOverride;
-
-      const urlScenarioId = new URLSearchParams(window.location.search).get("scenarioId");
-      return String(urlScenarioId || "").trim() || DEFAULT_SCENARIO_ID;
-    })();
+    const SCENARIO_ID = resolveScenarioId();
     const STORAGE_KEY = `ccs_coaching:${SCENARIO_ID}:chat`;
     const AGENT_NAME_STORAGE_KEY = "ccs_agentName";
     const AGENT_ID_STORAGE_KEY = "ccs_agentId";
@@ -3424,6 +3454,13 @@ NOTES
       runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
       runtimeStepProgression = null;
       scenarioLoadFailed = false;
+
+      if (!SCENARIO_ID) {
+        renderScenarioUnavailable(MISSING_SCENARIO_ID_MESSAGE);
+        autoResizeTextarea();
+        fitStage();
+        return;
+      }
 
       try {
         const config = await loadScenarioDisplayConfig();
