@@ -578,6 +578,59 @@ test("chat scripted response rule overrides closing guidance", () => {
   assert.match(instructions, /This scripted response overrides the closing line, general closing guidance, and generic customer behavior rules\./);
 });
 
+test("chat scripted response rule prevents adding later scripted beats", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "scripted_step_guard_chat",
+    label: "Scripted Step Guard",
+    title: "Scripted Step Guard",
+    channels: ["chat"],
+    customer: {
+      opening: {
+        chat: "I need help with Larry's food."
+      },
+      persona: {
+        name: "Demarco",
+        tone: "Concerned"
+      }
+    },
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "I need help with Larry's food." }],
+        guideSections: []
+      }
+    },
+    chatConfig: {
+      stepProgression: [
+        {
+          id: 0,
+          label: "Confirm address",
+          match: { any: [{ op: "contains_any", phrases: ["confirm your shipping address"] }] },
+          customerResponse: "It's 1234 Elm Street in El Paso."
+        },
+        {
+          id: 1,
+          label: "Ask missed delivery follow-up",
+          match: { any: [{ op: "contains_any", phrases: ["everything looks accurate"] }] },
+          customerResponse: "What happens if this order doesn't arrive on time?"
+        }
+      ]
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Expectation Setting", behaviors: ["Sets a next step."] }]
+    }
+  });
+
+  const addressStepInstructions = buildChatInstructions(scenario, 0);
+  assert.match(addressStepInstructions, /Current scripted response: "It's 1234 Elm Street in El Paso\."/);
+  assert.match(
+    addressStepInstructions,
+    /Do not add future customer questions, later scripted beats, closing lines, or extra content beyond the current scripted response\./
+  );
+
+  const followUpStepInstructions = buildChatInstructions(scenario, 1);
+  assert.match(followUpStepInstructions, /Current scripted response: "What happens if this order doesn't arrive on time\?"/);
+});
+
 test("realtime voice instructions include runtime customer beats in order", () => {
   const scenario = normalizeUploadedScenario({
     id: "voice_beats",

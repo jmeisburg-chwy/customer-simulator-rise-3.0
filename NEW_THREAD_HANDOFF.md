@@ -34,16 +34,17 @@ Exact implementation details:
 - The chat style rule now allows longer responses when a manager-approved scripted response exists for the current step.
 - The `/chat-turn` handler independently checks the current step for `customerResponse` and sends `text.verbosity: "high"` to OpenAI for scripted steps; otherwise it keeps `text.verbosity: "low"`.
 - The scripted response block now explicitly says that the current scripted response overrides the closing line, general closing guidance, and generic customer behavior rules. This guards against premature closes when a scenario has a `closingLine` but the active step is not the closing step.
+- The scripted response block also explicitly forbids adding future customer questions, later scripted beats, closing lines, or any extra content beyond the current scripted response. This guards against the model combining an address-only beat with the next follow-up question.
 - `ArticulateRise-ChatExperience.html` fixes the client-side progression order. Previously, `sendMessage()` advanced `currentStep` before calling `/chat-turn`, so a matched step 0 agent message sent `currentStep: 1` to Lambda and the AI customer replied with the next beat. The frontend now captures `responseStep = currentStep`, sends that step to Lambda, and advances to `nextStep` only after the customer reply is successfully appended.
 - The no-API fallback reply path now indexes `FALLBACK_CUSTOMER_REPLIES` by `responseStep` instead of `currentStep - 1`.
 
 Support notes:
 
 - The first known failing beat is the `delivery_promise_miss_10_partial_refund_chat` step where the customer should give Rocky's full puppy/birthday/planning context instead of replying only "Rocky" or "His name is Rocky."
-- The current tests cover scenario normalization, preservation of `customerResponse` through legacy step normalization, mirroring `chatConfig.stepProgression` into the state model, `buildScenarioClientConfig()` preserving scripted responses, and the chat frontend sending the matched step to Lambda before advancing progression. They do not directly exercise the live `/chat-turn` `textVerbosity` branch.
+- The current tests cover scenario normalization, preservation of `customerResponse` through legacy step normalization, mirroring `chatConfig.stepProgression` into the state model, `buildScenarioClientConfig()` preserving scripted responses, the scripted-response guard against premature closes and later-beat leakage, and the chat frontend sending the matched step to Lambda before advancing progression. They do not directly exercise the live `/chat-turn` `textVerbosity` branch.
 - The Lambda does not currently log the full chat system prompt or selected `text.verbosity` on successful `/chat-turn` requests. CloudWatch will not prove `SCRIPTED RESPONSE RULE` or `text.verbosity: "high"` without adding temporary debug logging.
 - If the issue persists after deployment, add temporary targeted logging for `scenario.id`, `currentStep`, whether `currentStepConfig.customerResponse` is present, and the selected `textVerbosity`. Do not log secrets or full customer transcripts.
-- The local chat scenario JSON at `/Users/jmeisburg/Downloads/scenario-1/on_time_delivery_no_partial_refund_needed_chat.json` has been updated to remove the extra "Can you send me the tracking link?" customer beat. After the learner confirms `1234 Elm Street in El Paso`, step 2 now asks `What happens if this order doesn't arrive on time?`, step 3 says `Perfect, that helps a lot.`, and step 4 closes only after the learner offers final help.
+- The local chat scenario JSON at `/Users/jmeisburg/Downloads/scenario-1/on_time_delivery_no_partial_refund_needed_chat.json` has been updated to remove the extra "Can you send me the tracking link?" customer beat. When asked to confirm the shipping address, step 1 now replies only `It's 1234 Elm Street in El Paso.` After the learner confirms the address looks accurate, step 2 asks `What happens if this order doesn't arrive on time?`, step 3 says `Perfect, that helps a lot.`, and step 4 closes only after the learner offers final help.
 
 ## Current Voice Customer Beat Fix
 
@@ -196,7 +197,7 @@ Previously run successfully on this branch:
 node tests/behavior-framework.test.js
 ```
 
-All 27 tests passed most recently after the scripted chat response, frontend progression fix, voice customer beat fix, and on-time delivery chat sequence update.
+All 28 tests passed most recently after the scripted chat response, frontend progression fix, voice customer beat fix, on-time delivery chat sequence update, and current-step guard against adding later scripted beats.
 
 ## Next Likely Steps
 
