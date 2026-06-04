@@ -355,6 +355,13 @@ test("voice coaching report uses the updated learner-facing report layout", () =
   assert.doesNotMatch(voiceHtml, /<details class="behavior-row"\$\{openAttr\}/);
 });
 
+test("voice experience tells learners to begin with their Chewy greeting", () => {
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  assert.match(voiceHtml, /Begin (?:the call )?by (?:stating|speaking) your <strong>Chewy greeting<\/strong>/);
+  assert.match(voiceHtml, /class="call-start-callout"/);
+});
+
 test("chat coaching report uses the updated learner-facing report layout", () => {
   const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
 

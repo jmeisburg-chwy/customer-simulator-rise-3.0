@@ -308,6 +308,18 @@ NOTES
       margin-top: 6px;
     }
 
+    .call-start-callout {
+      margin-top: 18px;
+      padding: 12px 14px;
+      background: #F7F9FC;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .call-start-callout strong {
+      font-weight: 800;
+    }
+
     .status-row,
     .scenario-label {
       margin-top: 10px;
@@ -1271,6 +1283,7 @@ NOTES
               </div>
               <ol class="instructions-list" id="voiceInstructionsList">
                 <li>Click <strong>Start</strong> and allow microphone access.</li>
+                <li>Begin the call by stating your <strong>Chewy greeting</strong>.</li>
                 <li>Support the customer as you would on a live call.</li>
                 <li>Use Coach Chewy for guidance.</li>
                 <li>Click <strong>End</strong> to receive feedback.</li>
@@ -1305,6 +1318,7 @@ NOTES
               <span id="status">Loading scenarios...</span>
             </div>
             <div class="hint" id="hint">If the scenario dropdown does not load, confirm the API URL and CORS settings.</div>
+            <div class="call-start-callout">ℹ️ Begin by speaking your <strong>Chewy greeting</strong>.</div>
 
             <audio id="assistant" autoplay></audio>
 
@@ -1406,6 +1420,7 @@ NOTES
     const endAreaEl = document.getElementById('endArea');
     const STATIC_VOICE_INSTRUCTIONS = [
       "Click <strong>Start</strong> and allow microphone access.",
+      "Begin the call by stating your <strong>Chewy greeting</strong>.",
       "Support the customer as you would on a live call.",
       "Use Coach Chewy for guidance.",
       "Click <strong>End</strong> to receive feedback."
