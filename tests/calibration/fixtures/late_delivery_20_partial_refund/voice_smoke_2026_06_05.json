@@ -1,0 +1,18 @@
+{
+  "id": "late_delivery_20_partial_refund_voice_smoke_2026_06_05",
+  "scenario_id": "late_delivery_20_partial_refund",
+  "scenario_name": "Late Delivery, 20% Partial Refund",
+  "channel": "voice",
+  "source_note": "Created from the reviewed June 5, 2026 voice coaching report because the raw voice transcript was not exported in the attachment.",
+  "transcript": "Customer: According to my tracking information, Fluffy's cat litter was supposed to be here 2 days ago and I still haven't seen it. Can you check on it for me?\nAgent: Hi Mr. Munsen, I can help check that for you. Is this the order for Fluffy's cat litter?\nCustomer: Yes, that's Fluffy's cat litter. It's essential, so can you please check why it's delayed?\nAgent: I see the order is running late, and I know that is super frustrating when it is something he really needs. Before I go further, can you please confirm your shipping address?\nCustomer: Yes, the shipping address is 3948 Simpson Road.\nAgent: Thank you. I've verified the address. The delay was caused by severe weather near the fulfillment center the order shipped from, which slowed outbound deliveries.\nCustomer: That still doesn't feel fair when the weather isn't even here.\nAgent: I understand this is frustrating. The package is now scheduled to arrive tomorrow by end of day. Since it is arriving three days after the original estimated delivery date, I can offer a 20 percent refund. I can apply that to your original payment method or to your Chewy account for future use. Which would you prefer?\nCustomer: Please credit it back to the card.\nAgent: Absolutely. I've processed the 20 percent refund back to your original payment method. You should see it within 3 to 5 business days. To recap, the order is confirmed for delivery to 3948 Simpson Road by end of day tomorrow, and if anything changes, please reach back out so we can help right away.\nCustomer: Okay, thank you. I'll watch for it tomorrow.",
+  "expected_behavior_ratings": {
+    "issue_understanding": "To a Great Extent",
+    "emotional_acknowledgement": "To Some Extent",
+    "problem_ownership": "To a Great Extent",
+    "personalization": "To a Great Extent",
+    "expectation_setting": "To a Great Extent",
+    "pet_engagement": "To Some Extent",
+    "communication_style": "To a Great Extent"
+  },
+  "trainer_notes": "Reviewed voice smoke test coaching report from June 5, 2026: expected final score 85.7%. The report rated Issue Understanding, Problem Ownership, Personalization, Expectation Setting, and Communication Style as To a Great Extent. Emotional Acknowledgement was To Some Extent because the learner acknowledged frustration but did not directly validate why non-local weather felt unfair. Pet Engagement was To Some Extent because the learner mentioned Fluffy and the needed item but did not build additional pet-centered rapport."
+}

@@ -1,0 +1,17 @@
+{
+  "id": "late_delivery_20_partial_refund_chat_smoke_2026_06_05",
+  "scenario_id": "late_delivery_20_partial_refund_chat",
+  "scenario_name": "Late Delivery, 20% Partial Refund",
+  "channel": "chat",
+  "transcript": "Customer: According to my tracking information, Fluffy's cat litter was supposed to be here 2 days ago and I still haven't seen it. Can you check on it for me?\nAgent: Absolutely, Mr. Munsen. I'm really glad you reached out so we can get this sorted out. I'd be happy to look into this for you right away. Is this the order for Fluffy's cat litter?\nCustomer: Yes, that's Fluffy's cat litter. It's essential - can you please check why it's delayed?\nAgent: Thank you. I'm pulling it up now. I do see that the order is running late, and I completely understand how frustrating that is, especially when it's something essential like cat litter. Before I go further, can you please confirm your shipping address so I can make sure everything matches on my end?\nCustomer: Yes - the shipping address is 3948 Simpson Road.\nAgent: Thank you for confirming. I've verified it's headed to 3948 Simpson Road. It looks like the delay was caused by severe weather near the fulfillment center the order shipped from, which slowed down outbound deliveries.\nCustomer: That still doesn't feel fair when the weather isn't even here.\nAgent: I can absolutely understand why that feels frustrating, Mr. Munsen. Even though the weather was not in your area, it still impacted the shipping route from our facility. We always aim to ship from the fastest available location, but in this case the weather created delays we could not reroute in time. I apologize that this affected your order. The good news is that your order is now scheduled to arrive tomorrow by end of day. Since it is arriving three days after the original Estimated Delivery Date, I'd like to offer you a 20 percent refund for the inconvenience. We can apply that back to your original payment method or to your Chewy account for future use. Which would you prefer?\nCustomer: Please credit it back to the card.\nAgent: Absolutely. I've processed the 20 percent refund back to your original payment method. You should see it reflected within 3 to 5 business days. Just to recap, your order is confirmed for delivery to 3948 Simpson Road by end of day tomorrow. If anything changes, please reach back out and we'll take care of it right away. Is there anything else I can help you with today?\nCustomer: Okay, thank you. I'll watch for it tomorrow.",
+  "expected_behavior_ratings": {
+    "issue_understanding": "To a Great Extent",
+    "emotional_acknowledgement": "To a Great Extent",
+    "problem_ownership": "To a Great Extent",
+    "personalization": "To a Great Extent",
+    "expectation_setting": "To a Great Extent",
+    "pet_engagement": "To a Great Extent",
+    "communication_style": "To a Great Extent"
+  },
+  "trainer_notes": "Reviewed chat smoke test from June 5, 2026. The learner confirmed the Fluffy cat litter order, verified 3948 Simpson Road, explained the fulfillment-center weather delay, validated the fairness concern, offered the required 20 percent refund with both destination options, processed the card refund, gave 3 to 5 business day timing, and recapped delivery plus the next step."
+}

@@ -2130,7 +2130,8 @@ NOTES
       return "You're getting there...";
     }
 
-    function resultSubhead(score) {
+    function resultSubhead(score, coachingMoments = 0) {
+      if (score >= 80 && coachingMoments === 0) return "You met the target. Keep using the behaviors you demonstrated.";
       if (score >= 80) return "You met the target. Review the coaching moments to keep the behavior consistent.";
       return "You did not pass this attempt yet. Review the coaching moments, then try again.";
     }
@@ -2264,6 +2265,7 @@ NOTES
           (focus ? `Keep practicing ${focus.behavior_label || focus.behavior_name.replaceAll("_", " ")} so your response feels specific to the customer's situation.` : "Keep practicing clear, specific responses that match the customer's situation.");
         const wentWellPoints = summaryPoints(evaluation?.what_went_well_points, wentWell);
         const strengthenPoints = summaryPoints(evaluation?.what_to_strengthen_next_points, strengthen);
+        const summaryNextStepLabel = coachingMoments > 0 ? "OPPORTUNITY" : "KEEP BUILDING";
         const summaryText =
           String(evaluation?.summary || "").trim() ||
           `${wentWell} ${strengthen}`;
@@ -2272,7 +2274,7 @@ NOTES
         html += `<section class="result-hero">`;
         html += `<div class="report-kicker">Coaching Report</div>`;
         html += `<h2>${escHtml(resultHeadline(normalized.final_score))}</h2>`;
-        html += `<p>${escHtml(resultSubhead(normalized.final_score))}</p>`;
+        html += `<p>${escHtml(resultSubhead(normalized.final_score, coachingMoments))}</p>`;
         html += `<div class="metric-grid">`;
         html += `<div class="metric-card"><span>Overall score</span><strong>${escHtml(String(normalized.final_score))}%</strong></div>`;
         html += `<div class="metric-card"><span>Target</span><strong>${targetScore}%</strong></div>`;
@@ -2285,7 +2287,7 @@ NOTES
         html += `<div class="summary-coach-card"><div class="coach-summary-avatar"><img src="${COACH_CHEWY_IMAGE_SRC}" alt="" /></div><div class="coach-summary-notes">`;
         html += `<p>${escHtml(summaryText)}</p>`;
         html += `<div class="coaching-note"><strong>DOING WELL</strong>${renderSummaryPoints(wentWellPoints)}</div>`;
-        html += `<div class="coaching-note"><strong>OPPORTUNITY</strong>${renderSummaryPoints(strengthenPoints)}</div>`;
+        html += `<div class="coaching-note"><strong>${summaryNextStepLabel}</strong>${renderSummaryPoints(strengthenPoints)}</div>`;
         html += `</div></div></section>`;
 
         html += `<div class="behavior-section-header"><h2 class="behavior-section-title">Customer Care Behaviors</h2>`;

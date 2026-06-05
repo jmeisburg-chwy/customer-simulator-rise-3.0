@@ -59,3 +59,9 @@ Allowed ratings:
 - `No Opportunity`
 
 Use `trainer_notes` to explain why the score is expected. These notes are for calibration review and should be specific enough for another trainer to understand the scoring decision.
+
+## Smoke-Test Fixtures
+
+The `chat_smoke_2026_06_05.json` fixture captures the reviewed chat smoke test transcript and expected 100% behavior ratings.
+
+The `voice_smoke_2026_06_05.json` fixture captures the reviewed voice smoke test scoring pattern from the coaching report. Its JSON includes a `source_note` because the raw voice transcript was not exported with the attachment; replace it with the raw transcript when one is available.

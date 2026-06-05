@@ -359,6 +359,17 @@ test("voice coaching report uses the updated learner-facing report layout", () =
   assert.doesNotMatch(voiceHtml, /<details class="behavior-row"\$\{openAttr\}/);
 });
 
+test("chat and voice report summaries relabel next-step notes when there are zero coaching moments", () => {
+  const chatHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-ChatExperience.html"), "utf8");
+  const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
+
+  for (const html of [chatHtml, voiceHtml]) {
+    assert.match(html, /resultSubhead\(normalized\.final_score,\s*coachingMoments\)/);
+    assert.match(html, /summaryNextStepLabel\s*=\s*coachingMoments\s*>\s*0\s*\?\s*"OPPORTUNITY"\s*:\s*"KEEP BUILDING"/);
+    assert.match(html, /<strong>\$\{summaryNextStepLabel\}<\/strong>/);
+  }
+});
+
 test("voice experience tells learners to begin with their Chewy greeting", () => {
   const voiceHtml = fs.readFileSync(path.join(repoRoot, "ArticulateRise-VoiceExperience.html"), "utf8");
 
@@ -379,6 +390,32 @@ test("chat coaching report uses the updated learner-facing report layout", () =>
   assert.doesNotMatch(chatHtml, /Overall summary/);
   assert.doesNotMatch(chatHtml, /data:image\/png;base64/);
   assert.doesNotMatch(chatHtml, /item\.open\s*=\s*!!isFocus/);
+});
+
+test("calibration fixtures include the reviewed chat and voice smoke tests", () => {
+  const chatFixturePath = path.join(repoRoot, "tests/calibration/fixtures/late_delivery_20_partial_refund/chat_smoke_2026_06_05.json");
+  const voiceFixturePath = path.join(repoRoot, "tests/calibration/fixtures/late_delivery_20_partial_refund/voice_smoke_2026_06_05.json");
+  const chatFixture = JSON.parse(fs.readFileSync(chatFixturePath, "utf8"));
+  const voiceFixture = JSON.parse(fs.readFileSync(voiceFixturePath, "utf8"));
+
+  assert.strictEqual(chatFixture.scenario_id, LATE_DELIVERY_CHAT_SCENARIO_ID);
+  assert.strictEqual(chatFixture.channel, "chat");
+  assert.deepStrictEqual(Object.values(chatFixture.expected_behavior_ratings), [
+    "To a Great Extent",
+    "To a Great Extent",
+    "To a Great Extent",
+    "To a Great Extent",
+    "To a Great Extent",
+    "To a Great Extent",
+    "To a Great Extent"
+  ]);
+
+  assert.strictEqual(voiceFixture.scenario_id, LATE_DELIVERY_SCENARIO_ID);
+  assert.strictEqual(voiceFixture.channel, "voice");
+  assert.strictEqual(voiceFixture.expected_behavior_ratings.emotional_acknowledgement, "To Some Extent");
+  assert.strictEqual(voiceFixture.expected_behavior_ratings.pet_engagement, "To Some Extent");
+  assert.strictEqual(voiceFixture.expected_behavior_ratings.issue_understanding, "To a Great Extent");
+  assert.match(voiceFixture.trainer_notes, /85\.7%/);
 });
 
 test("chat and voice require an explicit scenario id instead of using baked-in scenario fallbacks", () => {
