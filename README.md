@@ -1,142 +1,199 @@
-# Customer Simulator
+# Customer Simulator Rise
 
-## What this project is
+Chewy Customer Simulator Rise is a browser/Rise training package with one Node.js Lambda backend, separate chat and voice frontends, and an S3-backed scenario library.
 
-Customer Simulator is a Chewy training tool with one AWS Lambda backend and two separate frontend experiences:
+The current main branch is designed for the safer next-generation/test Lambda first. Do not deploy these changes to the live `cc-customer-simulator-v2` Lambda until they have been validated and intentionally cut over.
 
-- `ArticulateRise-ChatExperience.html` for chat practice
-- `ArticulateRise-VoiceExperience.html` for voice practice
+## What Is In This Repo
 
-The backend is the source of truth for scenarios, customer behavior, evaluation, and coaching storage.
+- `Lambda.js` - Lambda handler for scenarios, chat turns, Realtime voice sessions, evaluation, and coaching persistence.
+- `ArticulateRise-ChatExperience.html` - standalone chat experience for Articulate Rise or browser testing.
+- `ArticulateRise-VoiceExperience.html` - standalone voice experience for Articulate Rise or browser testing.
+- `scenarios/late_delivery_20_partial_refund_chat.json` - chat-only late delivery runtime scenario.
+- `scenarios/late_delivery_20_partial_refund.scenario.json` - voice-only late delivery runtime scenario source.
+- `tests/behavior-framework.test.js` - local behavior/config regression checks.
+- `tests/calibration/` - offline trainer-scored calibration fixtures and optional live `/evaluate` comparison script.
+- `scenario-authoring-guide.md`, `scenario-template.json`, and `gpt-scenario-generation-prompt.md` - scenario authoring helpers.
+- `template.yaml` - CloudFormation/SAM-style reference template. Treat it as infrastructure reference unless you intentionally choose to deploy it.
 
-## How it works at a high level
+There is no npm package install step for the current local scripts. They use Node.js built-ins.
 
-`Lambda.js` serves scenario configuration to both frontends by reading the selected scenario from the S3 scenario library.
+## Runtime Flow
 
-- Chat and voice stay separate in the UI.
-- Both frontends load scenario-specific display/config data from `GET /scenario`.
-- Chat uses `POST /chat-turn` for turn-by-turn customer replies.
-- Voice uses `POST /session` to create an OpenAI Realtime session.
-- Both experiences use `POST /evaluate` to generate behavior-framework coaching.
-- Both can save coaching records through `POST /coaching`; behavior-framework payloads are stored as one manager-facing session record per learner attempt, with learner/session metadata, overall score fields, coaching summary fields, and flattened per-behavior dashboard columns.
+1. A Rise HTML file resolves `apiBase` and `scenarioId`.
+2. The frontend calls `GET /scenario` to load scenario config from Lambda.
+3. Lambda loads the requested scenario from the S3 scenario library.
+4. Chat uses `POST /chat-turn` for customer replies.
+5. Voice uses `POST /session` to create an OpenAI Realtime WebRTC session.
+6. Chat and voice both send the final transcript to `POST /evaluate`.
+7. Both experiences can save structured coaching records through `POST /coaching`.
 
-Scenario selection is controlled in each frontend by:
-- `SCENARIO_OVERRIDE` if set
-- otherwise the `scenarioId` query parameter
-- otherwise the frontend default scenario id
+## Rise Configuration
 
-## Quick start
+Both Rise files require an explicit `scenarioId`. If no scenario ID is provided, the simulator stops and shows a clear scenario unavailable message.
 
-1. Deploy `Lambda.js` behind an HTTP endpoint.
-2. Set the required Lambda environment variables.
-3. Update `SESSION_BASE` in both frontend HTML files.
-4. Optionally set `SCENARIO_OVERRIDE` in either frontend.
-5. Open or embed the frontend HTML files in Articulate Rise.
+`apiBase` resolution order:
 
-For a new scenario:
-1. Use the GPT prompt in `gpt-scenario-generation-prompt.md` with the Customer Simulator Scenario Builder.
-2. Upload one scenario object to `scenarios/{normalized_scenario_id}.json` in the configured S3 scenario library bucket.
-3. Add that scenario to `index.json`.
-4. Point the frontend to that scenario with `SCENARIO_OVERRIDE` or `?scenarioId=...`.
+1. URL query parameter: `?apiBase=...`
+2. `window.CCS_CONFIG.apiBase`
+3. Baked-in `DEFAULT_API_BASE`
 
-## AWS setup
+`scenarioId` resolution order:
+
+1. URL query parameter: `?scenarioId=...`
+2. `window.CCS_CONFIG.scenarioId`
+3. `SCENARIO_OVERRIDE`, only when intentionally set for a locked package
+
+Example chat test URL:
+
+```text
+ArticulateRise-ChatExperience.html?apiBase=TEST_API_BASE&scenarioId=late_delivery_20_partial_refund_chat
+```
+
+Example voice test URL:
+
+```text
+ArticulateRise-VoiceExperience.html?apiBase=TEST_API_BASE&scenarioId=late_delivery_20_partial_refund
+```
+
+Host-page configuration is also supported:
+
+```html
+<script>
+  window.CCS_CONFIG = {
+    apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
+    scenarioId: "late_delivery_20_partial_refund_chat"
+  };
+</script>
+```
+
+## S3 Scenario Library
+
+Runtime scenario files are single scenario objects. Batch arrays are not supported by the Rise runtime.
+
+Expected S3 keys for the current late delivery package:
+
+- `scenarios/late_delivery_20_partial_refund_chat.json`
+  - source file: `scenarios/late_delivery_20_partial_refund_chat.json`
+  - scenario id: `late_delivery_20_partial_refund_chat`
+  - channels: `["chat"]`
+- `scenarios/late_delivery_20_partial_refund.json`
+  - source file: `scenarios/late_delivery_20_partial_refund.scenario.json`
+  - scenario id: `late_delivery_20_partial_refund`
+  - channels: `["voice"]`
+
+`index.json` should include a `scenarios` array for discovery. Lambda loads scenario bodies from `scenarios/{scenario_id}.json`, so the index entries are metadata:
+
+```json
+{
+  "scenarios": [
+    {
+      "id": "late_delivery_20_partial_refund_chat",
+      "title": "Late Delivery, 20% Partial Refund",
+      "channels": ["chat"],
+      "status": "active"
+    },
+    {
+      "id": "late_delivery_20_partial_refund",
+      "title": "Late Delivery, 20% Partial Refund",
+      "channels": ["voice"],
+      "status": "active"
+    }
+  ]
+}
+```
+
+The chat scenario owns chat step progression gates. The voice scenario is voice-only and no longer advertises outdated chat progression fields.
+
+## Lambda API
+
+Required API routes:
+
+- `GET /scenarios`
+- `GET /scenario`
+- `POST /chat-turn`
+- `POST /session`
+- `POST /evaluate`
+- `POST /coaching`
 
 Required Lambda environment variables:
 
 - `OPENAI_API_KEY`
 - `COACHING_TABLE`
-- `INGEST_TOKEN`
 - `AWS_REGION`
 - `SCENARIO_LIBRARY_BUCKET`
-- `SCENARIO_LIBRARY_PREFIX` (optional)
+- `SCENARIO_LIBRARY_PREFIX` optional
+- `INGEST_TOKEN` optional, depending on your ingestion/auth path
 
-Required API routes:
+The next-generation/test Lambda that should receive this code first is:
 
-- `GET /scenario`
-- `GET /scenarios`
-- `POST /chat-turn`
-- `POST /evaluate`
-- `POST /coaching`
-- `POST /session`
+```text
+customer-simulator-prod-cc-customer-simulator
+```
 
-Practical notes:
+Do not update the live Lambda without an intentional production cutover:
 
-- `GET /scenario` is what the frontends use to load scenario-specific guidance and configuration.
-- `GET /scenario`, `POST /chat-turn`, `POST /session`, and `POST /evaluate` load only the requested `scenarios/{normalized_scenario_id}.json` object from S3.
-- `GET /scenarios` reads `index.json` and is useful for listing available scenarios and voice discovery flows.
-- `POST /coaching` writes to DynamoDB using `COACHING_TABLE`. Behavior-framework payloads write one item per completed learner attempt so the DynamoDB to S3 to Snowflake to OmniReach pipeline keeps one dashboard row per learner session.
-- Make sure CORS is configured for the domain or LMS origin that will host the HTML files.
+```text
+cc-customer-simulator-v2
+```
 
-## Frontend setup
+## Chat Behavior
 
-Key frontend files:
+Chat progression is scenario-driven through `simulation.stateModel.chatStepProgression`.
 
-- `ArticulateRise-ChatExperience.html`
-- `ArticulateRise-VoiceExperience.html`
+The late delivery chat scenario uses stricter progression gates so the customer does not advance when the learner only says one loose keyword. Key gates require:
 
-For most deployments, the only frontend values you need to change are:
+- address verification before the customer provides the address
+- weather or fulfillment-center explanation plus updated delivery expectation
+- 20 percent refund plus both refund destination options
+- original payment/card plus refund timing
+- delivery recap plus a next step if delivery misses
 
-- `SESSION_BASE`
-- `SCENARIO_OVERRIDE`
+Scenario-specific customer behavior rules now live in scenario JSON rather than scenario-ID branches in Lambda.
 
-How scenario selection works:
+Supported scenario-driven behavior fields include:
 
-- Leave `SCENARIO_OVERRIDE` blank to use the URL parameter or default scenario.
-- Use `?scenarioId=your_scenario_id` when you want the host page to control the scenario.
-- Set `SCENARIO_OVERRIDE` when you want a frontend locked to one scenario.
+- `customer.behavior.rules`
+- `customer.behavior.conditionalFollowUps`
+- `customer.behavior.softeningRule`
+- `customer.behavior.closingRule`
+- `customer.behavior.allowedObjections`
 
-## Creating a new scenario
+Backward-compatible fields such as `facts.conditionalFollowUp`, `facts.allowedObjections`, and `customer.behavior.closingLine` are still supported.
 
-Use these files:
+## Voice Behavior
 
-- `scenario-template.json`
-- `scenario-authoring-guide.md`
-- `gpt-scenario-generation-prompt.md`
+The voice experience keeps the existing Realtime WebRTC flow.
 
-Recommended workflow:
+Transcript capture now uses:
 
-1. Start with the GPT "Customer Simulator Scenario Builder".
-2. Have it generate runtime-valid scenario JSON using the current contract.
-3. Review the output against `scenario-authoring-guide.md`.
-4. Save the final scenario object as `scenarios/{normalized_scenario_id}.json` in the S3 scenario library bucket.
-5. Add or update the corresponding entry in `index.json`.
-6. Test the scenario in chat and/or voice depending on the channels you enabled.
+- Realtime assistant transcript events for customer turns
+- Realtime input audio transcription events for agent turns when available
+- `item_id` reconciliation where available
+- browser `SpeechRecognition` only as a fallback
+- duplicate prevention when Realtime transcription and browser fallback capture the same or very similar agent text
 
-Important:
+`POST /session` requests OpenAI Realtime input audio transcription:
 
-- The S3 scenario library is the backend source of truth for scenarios.
-- Runtime scenario files must be single scenario objects. Batch array files are not supported by the Rise runtime; split batches into individual scenario files before upload.
-- Do not create new scenarios only in the frontend.
-- The frontend should consume scenario data from `/scenario`, not hardcoded scenario copy whenever backend config is available.
+```json
+{
+  "audio": {
+    "input": {
+      "transcription": {
+        "model": "gpt-realtime-whisper",
+        "language": "en",
+        "delay": "medium"
+      }
+    }
+  }
+}
+```
 
-## Architecture overview
+Server VAD turn detection is still preserved.
 
-Key files:
+## Coaching And Transcripts
 
-- `Lambda.js`
-  Backend routes, S3 scenario loading, prompt construction, evaluation, and coaching persistence.
-- `ArticulateRise-ChatExperience.html`
-  Standalone chat experience for Rise or browser embedding.
-- `ArticulateRise-VoiceExperience.html`
-  Standalone voice experience using Realtime session creation.
-- `scenario-template.json`
-  Starter template for new scenarios.
-- `scenario-authoring-guide.md`
-  Field-by-field scenario authoring guide.
-- `gpt-scenario-generation-prompt.md`
-  Prompt for the GPT-based scenario builder.
-
-High-level flow:
-
-1. Frontend resolves the active scenario id.
-2. Frontend requests scenario config from `GET /scenario`.
-3. Learner completes chat or voice interaction.
-4. Backend evaluates the transcript with `POST /evaluate`.
-5. Frontend optionally saves the coaching record with `POST /coaching`.
-
-## Behavior framework scoring
-
-The evaluator returns all seven default Customer Care behaviors:
+`POST /evaluate` returns behavior-framework coaching for the seven official customer care behaviors:
 
 - `issue_understanding`
 - `emotional_acknowledgement`
@@ -146,31 +203,83 @@ The evaluator returns all seven default Customer Care behaviors:
 - `pet_engagement`
 - `communication_style`
 
-Ratings use the official behavior framework scale:
+Rating scale:
 
-- `To a Great Extent` = `100/1`
-- `To Some Extent` = `50/1`
-- `Missed Opportunity` = `0/1`
-- `No Opportunity` = `0/0`
+- `To a Great Extent` = 100
+- `To Some Extent` = 50
+- `Missed Opportunity` = 0
+- `No Opportunity` = excluded from the denominator
 
-`No Opportunity` is applicability, not a penalty. It is excluded from the final score denominator. Scenario authors should define `coaching.behaviorRubric` so each scenario controls what creates an opportunity and what partial versus full credit looks like.
+`POST /coaching` writes structured DynamoDB records that preserve:
 
-## Coaching reporting fields
+- transcript
+- channel
+- scenario id and scenario name
+- simulation session id
+- learner fields
+- final score
+- focus behavior
+- behavior rating, score, summary, score explanation, observed criteria, and missed criteria columns
 
-Behavior-framework coaching saves a lean DynamoDB row optimized for training-manager dashboards:
+The code currently saves full transcripts in DynamoDB. Long calls may eventually need S3 transcript storage because DynamoDB items have a 400 KB limit.
 
-- Learner/session fields: `learner_id`, `learner_name`, `learner_first_name`, `learner_last_name`, `simulation_session_id`, `scenario_id`, `scenario_name`, `channel`, `completed_at`, `trainingDate`, `trainingTime`, `completionStatus`.
-- DynamoDB technical key fields: `agentId`, `endedAt_sessionId`. These remain because the existing `RoleplayCoaching` table requires them as primary key attributes.
-- Overall coaching fields: `final_score`, `focus_behavior`, `coachSummaryText`, `what_went_well`, `what_to_strengthen_next`.
-- Per-behavior fields for each official behavior: `{behavior}_rating`, `{behavior}_score`, `{behavior}_summary`, `{behavior}_score_explanation`, `{behavior}_observed_criteria`, `{behavior}_missed_criteria`.
+## Local Verification
 
-The behavior-framework row intentionally omits redundant, empty, or internal fields such as `agentName`, `learner_employee_id`, `learner_email`, `learner_username`, `learner_identity_source`, `record_type`, `course_id`, nested `behavior_results`, and full `transcript`.
+Offline calibration, no AWS or OpenAI calls:
 
-## Notes / important behaviors
+```bash
+node tests/calibration/run-calibration.js
+```
 
-- Chat and voice are separate experiences and can point to different scenarios.
-- Cleaned scenarios in S3 use the current runtime contract. Older scenarios may still be using compatibility paths until they are refactored.
-- Generated scenario JSON should be uploaded as one object per scenario to the S3 scenario library.
-- `simulation.stateModel.chatStepProgression` is the source of truth for chat progression in cleaned scenarios.
-- Because prompt behavior lives in scenario data and backend logic, small wording changes can change learner experience.
-- There is no full automated test suite here yet, so test changes end to end after updating scenarios, prompts, or frontend config.
+Optional live calibration against a local or deployed `/evaluate` endpoint:
+
+```bash
+EVAL_API_URL="https://example.execute-api.us-east-2.amazonaws.com/evaluate" node tests/calibration/run-calibration.js
+```
+
+Behavior framework regression checks:
+
+```bash
+node tests/behavior-framework.test.js
+```
+
+Known current unrelated failure:
+
+```text
+Missing JSON fixture on_time_delivery_no_partial_refund_needed_chat.json
+```
+
+The behavior test file passes the current targeted checks before it reaches that missing fixture.
+
+## Manual AWS Deployment Checklist
+
+Code to deploy first to `customer-simulator-prod-cc-customer-simulator`:
+
+- `Lambda.js`
+
+Rise files to upload or paste into the test Rise package:
+
+- `ArticulateRise-ChatExperience.html`
+- `ArticulateRise-VoiceExperience.html`
+
+Scenario objects to upload to S3:
+
+- `scenarios/late_delivery_20_partial_refund_chat.json` -> `scenarios/late_delivery_20_partial_refund_chat.json`
+- `scenarios/late_delivery_20_partial_refund.scenario.json` -> `scenarios/late_delivery_20_partial_refund.json`
+
+Manual AWS settings to verify:
+
+- Lambda environment variables listed above
+- Lambda IAM can read scenario objects from S3
+- Lambda IAM can write coaching rows to DynamoDB
+- API Gateway routes reach the Lambda
+- CORS allows the Rise/LMS origin
+- DynamoDB table keys match the existing `RoleplayCoaching` shape
+- CloudWatch logs show no `/scenario`, `/session`, `/evaluate`, or `/coaching` errors during smoke tests
+
+Rollback options:
+
+- Point Rise `apiBase` back to the prior backend
+- Restore the previous Lambda version/package for the test Lambda
+- Restore prior S3 `index.json` and scenario objects
+- Do not use `cc-customer-simulator-v2` as a rollback target unless that is part of an intentional production procedure
