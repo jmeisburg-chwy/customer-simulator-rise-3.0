@@ -2,6 +2,14 @@
 
 This guide defines the scenario object used by the current Customer Simulator platform. Author scenarios to this shape so chat and voice frontends can render display content, use chat progression rules, and submit coaching results consistently.
 
+## Runtime Storage
+
+The Rise runtime reads scenarios from the S3 scenario library:
+
+- `index.json` lists available scenarios.
+- `scenarios/{normalized_scenario_id}.json` contains one single scenario object.
+- Batch files that contain an array of scenarios are not supported at runtime. Split batch outputs into individual scenario files and update `index.json` before using them in Rise.
+
 ## Required Fields
 
 These fields should always be present:

@@ -3,22 +3,32 @@ CHEWY CUSTOMER SIMULATOR: CHAT EXPERIENCE
 
 HOW TO USE
 1. Upload/paste this file into your Articulate Rise block for the chat experience.
-2. Set SESSION_BASE to your AWS API base URL.
-3. Set SCENARIO_OVERRIDE to the scenario id you want to run.
-4. This file currently selects late_delivery_20_partial_refund directly.
+2. Provide a scenario id for each Rise activity. The simulator will not start without one.
+3. To use a test backend, pass apiBase in the URL or set window.CCS_CONFIG.apiBase.
+4. To use the live backend, omit apiBase so the baked-in DEFAULT_API_BASE is used.
 
 WHAT TO EDIT
-- SESSION_BASE = your API Gateway base URL
-- SCENARIO_OVERRIDE = your scenario id from Lambda.js
+- DEFAULT_API_BASE = the safe fallback API Gateway base URL for this package.
+- SCENARIO_OVERRIDE = leave blank unless this package must be locked to one scenario.
 
 EXAMPLE
-const SESSION_BASE = "https://your-api-id.execute-api.us-east-2.amazonaws.com";
-const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
+URL configuration:
+  ArticulateRise-ChatExperience.html?apiBase=https://test-api-id.execute-api.us-east-2.amazonaws.com&scenarioId=late_delivery_20_partial_refund_chat
+
+Host-page configuration before this script runs:
+  window.CCS_CONFIG = {
+    apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
+    scenarioId: "late_delivery_20_partial_refund_chat"
+  };
+
+Locked-package configuration:
+  const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund_chat";
 
 NOTES
 - This file is chat-only.
 - Scenario content, hotkeys, guide content, and progression come from Lambda.
-- To use a different scenario, change only SCENARIO_OVERRIDE.
+- Every Rise activity should provide its own scenarioId from the S3 scenario library.
+- Missing scenarioId intentionally shows "Scenario unavailable" and stops startup.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -1769,21 +1779,41 @@ NOTES
       pill.textContent = chatAccordion.open ? closeLabel : openLabel;
     }
 
-    const SESSION_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const SCENARIO_OVERRIDE = "";
+    const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
+
+    function getRuntimeConfigValue(key) {
+      const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
+      return String(config[key] || "").trim();
+    }
+
+    function resolveApiBase() {
+      const urlApiBase = String(new URLSearchParams(window.location.search).get("apiBase") || "").trim();
+      const configuredApiBase = getRuntimeConfigValue("apiBase");
+      return String(urlApiBase || configuredApiBase || DEFAULT_API_BASE).trim().replace(/\/+$/g, "");
+    }
+
+    function resolveScenarioId() {
+      const urlScenarioId = String(new URLSearchParams(window.location.search).get("scenarioId") || "").trim();
+      if (urlScenarioId) return urlScenarioId;
+
+      const configuredScenarioId = getRuntimeConfigValue("scenarioId");
+      if (configuredScenarioId) return configuredScenarioId;
+
+      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
+      if (explicitOverride) return explicitOverride;
+
+      return "";
+    }
+
+    const SESSION_BASE = resolveApiBase();
     const SCENARIO_CONFIG_URL = SESSION_BASE + "/scenario";
     const CHAT_API_URL = SESSION_BASE + "/chat-turn";
     const EVAL_API_URL = SESSION_BASE + "/evaluate";
     const SAVE_API_URL = SESSION_BASE + "/coaching";
 
-    const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
-    const DEFAULT_SCENARIO_ID = "late_delivery_20_partial_refund";
-    const SCENARIO_ID = (() => {
-      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
-      if (explicitOverride) return explicitOverride;
-
-      const urlScenarioId = new URLSearchParams(window.location.search).get("scenarioId");
-      return String(urlScenarioId || "").trim() || DEFAULT_SCENARIO_ID;
-    })();
+    const SCENARIO_ID = resolveScenarioId();
     const STORAGE_KEY = `ccs_coaching:${SCENARIO_ID}:chat`;
     const AGENT_NAME_STORAGE_KEY = "ccs_agentName";
     const AGENT_ID_STORAGE_KEY = "ccs_agentId";
@@ -1807,52 +1837,61 @@ NOTES
         id: 0,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["sorry", "understand", "happy to help", "help you", "look into", "check"]) && containsAny(m, ["food", "pet", "larry", "worry", "concern"]);
+          return containsAny(m, ["sorry", "understand", "frustrating", "glad you reached out", "look into", "check on"]) && containsAny(m, ["munsen", "fluffy", "cat litter", "order"]);
         }
       },
       {
         id: 1,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["address", "verify", "confirm", "shipping"]) || containsAny(m, ["track", "tracking", "tuesday", "delivery date"]);
+          return containsAny(m, ["confirm", "verify", "provide", "share", "tell me", "can i have", "could you give me", "could you confirm", "could you verify"]) && containsAny(m, ["shipping address", "address on the order", "delivery address", "address"]);
         }
       },
       {
         id: 2,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["confirmed", "verified", "looks correct", "everything looks correct", "address", "elm street", "el paso"]);
+          return containsAny(m, ["3948 simpson road", "3948 simpson rd", "verified", "confirmed"]) && containsAny(m, ["weather", "fulfillment center", "shipping route", "outbound deliveries", "delay"]) && containsAny(m, ["tomorrow", "end of day", "scheduled to arrive", "updated delivery"]);
         }
       },
       {
         id: 3,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["tracking details", "estimated delivery window", "larry’s food", "larry's food", "1-3 days", "1 to 3 days", "track it more closely"]);
+          return containsAny(m, ["frustrating", "unfair", "understand", "not in your area", "not local", "apologize"]) && containsAny(m, ["make this right", "take care", "resolution", "partial refund", "refund"]);
         }
       },
       {
         id: 4,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["if it doesn't arrive", "if it does not arrive", "if it doesn’t arrive", "reach back out", "contact us", "let us know", "tuesday"]);
+          return containsAny(m, ["20 percent", "20%", "twenty percent"]) && containsAny(m, ["original payment method", "back to your card", "back to the card", "card"]) && containsAny(m, ["chewy account", "account credit", "chewy credit", "future use"]);
         }
       },
       {
         id: 5,
         successCheck(message) {
           const m = message.toLowerCase();
-          return containsAny(m, ["anything else", "all set", "glad to help", "on track", "help with today", "larry’s food is on its way", "larry's food is on its way"]);
+          return containsAny(m, ["processed", "original payment method", "back to your card", "back to the card", "card"]) && containsAny(m, ["3 to 5 business days", "3-5 business days", "three to five business days"]);
+        }
+      },
+      {
+        id: 6,
+        successCheck(message) {
+          const m = message.toLowerCase();
+          return containsAny(m, ["tomorrow by end of day", "scheduled to arrive tomorrow", "arrive tomorrow", "delivery tomorrow", "3948 simpson road"]) && containsAny(m, ["if it does not arrive", "if it doesn't arrive", "if it doesn’t arrive", "reach back out", "contact us", "let us know"]);
         }
       }
     ];
 
     const FALLBACK_CUSTOMER_REPLIES = [
-      "Thank you. I just want to make sure everything is still on track.",
-      "Sure, I can confirm that information.",
-      "Okay, thanks for checking that.",
+      "Yes, that's the one.",
+      "Sure, it's 3948 Simpson Rd.",
+      "Why is that my problem? There's no weather where I live! You should have shipped it from another location.",
       "What should I do if there is still a problem?",
-      "That helps a lot. Thank you."
+      "Please credit it back to the card.",
+      "Okay, thank you.",
+      "Thanks, that covers everything."
     ];
 
     const viewportEl = document.getElementById("viewport");
@@ -2372,7 +2411,8 @@ NOTES
       return "Keep practicing...";
     }
 
-    function resultSubhead(score) {
+    function resultSubhead(score, coachingMoments = 0) {
+      if (score >= 80 && coachingMoments === 0) return "You met the target for this attempt. Keep using the behaviors you demonstrated, then continue in the course.";
       if (score >= 80) return "You met the target for this attempt. Review the coaching moments, then continue in the course.";
       return "You did not pass this attempt yet. Review the coaching moments, then try again.";
     }
@@ -2622,6 +2662,7 @@ NOTES
           (focus ? `Keep practicing ${focus.behavior_label || focus.behavior_name.replaceAll("_", " ")} so your response feels specific to the customer's situation.` : "Keep practicing clear, specific responses that match the customer's situation.");
         const wentWellPoints = summaryPoints(evaluation?.what_went_well_points, wentWell);
         const strengthenPoints = summaryPoints(evaluation?.what_to_strengthen_next_points, strengthen);
+        const summaryNextStepLabel = coachingMoments > 0 ? "OPPORTUNITY" : "KEEP BUILDING";
         const summaryText =
           String(evaluation?.summary || "").trim() ||
           `${wentWell} ${strengthen}`;
@@ -2633,7 +2674,7 @@ NOTES
             <section class="result-hero">
               <div class="report-kicker">Coaching Report</div>
               <h2>${escHtml(resultHeadline(normalized.final_score))}</h2>
-              <p>${escHtml(resultSubhead(normalized.final_score))}</p>
+              <p>${escHtml(resultSubhead(normalized.final_score, coachingMoments))}</p>
               <div class="metric-grid">
                 <div class="metric-card"><span>Overall score</span><strong>${escHtml(String(normalized.final_score))}%</strong></div>
                 <div class="metric-card"><span>Target</span><strong>${targetScore}%</strong></div>
@@ -2649,7 +2690,7 @@ NOTES
                 <div class="coach-summary-notes">
                   <p>${escHtml(summaryText)}</p>
                   <div class="coaching-note"><strong>DOING WELL</strong>${renderSummaryPoints(wentWellPoints)}</div>
-                  <div class="coaching-note"><strong>OPPORTUNITY</strong>${renderSummaryPoints(strengthenPoints)}</div>
+                  <div class="coaching-note"><strong>${summaryNextStepLabel}</strong>${renderSummaryPoints(strengthenPoints)}</div>
                 </div>
               </div>
             </section>
@@ -3141,14 +3182,12 @@ NOTES
       appendMessage(agentTurn.role, agentTurn.content, agentTurn.label);
       setComposerState(true);
 
+      const responseStep = currentStep;
       const stepPassed = evaluateCurrentStep(text);
-
-      if (stepPassed) {
-        currentStep = Math.min(currentStep + 1, getStepConfigLength());
-      }
+      const nextStep = stepPassed ? Math.min(responseStep + 1, getStepConfigLength()) : responseStep;
 
       try {
-        const customerReply = await getCustomerReply(text, stepPassed);
+        const customerReply = await getCustomerReply(text, stepPassed, responseStep);
         const replyTurn = {
           role: "assistant",
           content: customerReply,
@@ -3157,6 +3196,7 @@ NOTES
         };
         transcript.push(replyTurn);
         appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta);
+        currentStep = nextStep;
       } catch (error) {
         const errorTurn = {
           role: "system",
@@ -3170,14 +3210,14 @@ NOTES
       }
     }
 
-    async function getCustomerReply(latestAgentMessage, stepPassed) {
+    async function getCustomerReply(latestAgentMessage, stepPassed, responseStep) {
       setTyping(true);
 
       if (!CHAT_API_URL) {
         await wait(700);
         setTyping(false);
         return stepPassed
-          ? FALLBACK_CUSTOMER_REPLIES[Math.min(currentStep - 1, FALLBACK_CUSTOMER_REPLIES.length - 1)]
+          ? FALLBACK_CUSTOMER_REPLIES[Math.min(responseStep, FALLBACK_CUSTOMER_REPLIES.length - 1)]
           : "I’m still not totally sure what’s going on. Can you help me understand what happens next?";
       }
 
@@ -3187,7 +3227,8 @@ NOTES
         agentName: getAgentIdentity().agentName,
         sessionId,
         latestAgentMessage,
-        currentStep,
+        currentStep: responseStep,
+        stepPassed,
         transcript: transcript.map((turn) => ({
           role: normalizeRoleForApi(turn.role),
           content: turn.content
@@ -3424,6 +3465,13 @@ NOTES
       runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
       runtimeStepProgression = null;
       scenarioLoadFailed = false;
+
+      if (!SCENARIO_ID) {
+        renderScenarioUnavailable(MISSING_SCENARIO_ID_MESSAGE);
+        autoResizeTextarea();
+        fitStage();
+        return;
+      }
 
       try {
         const config = await loadScenarioDisplayConfig();

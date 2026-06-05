@@ -3,22 +3,32 @@ CHEWY CUSTOMER SIMULATOR: VOICE EXPERIENCE
 
 HOW TO USE
 1. Upload/paste this file into your Articulate Rise block for the voice experience.
-2. Set SESSION_BASE to your AWS API base URL.
-3. Set SCENARIO_OVERRIDE to the scenario id you want to run.
-4. This file currently selects late_delivery_20_partial_refund directly.
+2. Provide a scenario id for each Rise activity. The simulator will not start without one.
+3. To use a test backend, pass apiBase in the URL or set window.CCS_CONFIG.apiBase.
+4. To use the live backend, omit apiBase so the baked-in DEFAULT_API_BASE is used.
 
 WHAT TO EDIT
-- SESSION_BASE = your API Gateway base URL
-- SCENARIO_OVERRIDE = your scenario id from Lambda.js
+- DEFAULT_API_BASE = the safe fallback API Gateway base URL for this package.
+- SCENARIO_OVERRIDE = leave blank unless this package must be locked to one scenario.
 
 EXAMPLE
-const SESSION_BASE = "https://your-api-id.execute-api.us-east-2.amazonaws.com";
-const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
+URL configuration:
+  ArticulateRise-VoiceExperience.html?apiBase=https://test-api-id.execute-api.us-east-2.amazonaws.com&scenarioId=late_delivery_20_partial_refund
+
+Host-page configuration before this script runs:
+  window.CCS_CONFIG = {
+    apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
+    scenarioId: "late_delivery_20_partial_refund"
+  };
+
+Locked-package configuration:
+  const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
 
 NOTES
 - This file is voice-only.
 - Scenario guide content comes from Lambda.
-- To use a different scenario, change only SCENARIO_OVERRIDE.
+- Every Rise activity should provide its own scenarioId from the S3 scenario library.
+- Missing scenarioId intentionally shows "Scenario unavailable" and stops startup.
 -->
 
 <!DOCTYPE html>
@@ -306,6 +316,18 @@ NOTES
       color: var(--muted);
       font-size: 13px;
       margin-top: 6px;
+    }
+
+    .call-start-callout {
+      margin-top: 18px;
+      padding: 12px 14px;
+      background: #F7F9FC;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .call-start-callout strong {
+      font-weight: 800;
     }
 
     .status-row,
@@ -1271,6 +1293,7 @@ NOTES
               </div>
               <ol class="instructions-list" id="voiceInstructionsList">
                 <li>Click <strong>Start</strong> and allow microphone access.</li>
+                <li>Begin the call by stating your <strong>Chewy greeting</strong>.</li>
                 <li>Support the customer as you would on a live call.</li>
                 <li>Use Coach Chewy for guidance.</li>
                 <li>Click <strong>End</strong> to receive feedback.</li>
@@ -1305,6 +1328,7 @@ NOTES
               <span id="status">Loading scenarios...</span>
             </div>
             <div class="hint" id="hint">If the scenario dropdown does not load, confirm the API URL and CORS settings.</div>
+            <div class="call-start-callout">ℹ️ Begin by speaking your <strong>Chewy greeting</strong>.</div>
 
             <audio id="assistant" autoplay></audio>
 
@@ -1351,7 +1375,35 @@ NOTES
     });
     syncAccordionLabel();
 
-    const SESSION_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
+    const SCENARIO_OVERRIDE = "";
+    const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
+
+    function getRuntimeConfigValue(key) {
+      const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
+      return String(config[key] || "").trim();
+    }
+
+    function resolveApiBase() {
+      const urlApiBase = String(new URLSearchParams(window.location.search).get("apiBase") || "").trim();
+      const configuredApiBase = getRuntimeConfigValue("apiBase");
+      return String(urlApiBase || configuredApiBase || DEFAULT_API_BASE).trim().replace(/\/+$/g, "");
+    }
+
+    function resolveScenarioId() {
+      const urlScenarioId = String(new URLSearchParams(window.location.search).get("scenarioId") || "").trim();
+      if (urlScenarioId) return urlScenarioId;
+
+      const configuredScenarioId = getRuntimeConfigValue("scenarioId");
+      if (configuredScenarioId) return configuredScenarioId;
+
+      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
+      if (explicitOverride) return explicitOverride;
+
+      return "";
+    }
+
+    const SESSION_BASE = resolveApiBase();
     const SCENARIOS_URL = SESSION_BASE + "/scenarios";
     const SCENARIO_CONFIG_URL = SESSION_BASE + "/scenario";
     const SESSION_URL = SESSION_BASE + "/session";
@@ -1360,15 +1412,7 @@ NOTES
 
     const INGEST_TOKEN = "";
 
-    const SCENARIO_OVERRIDE = "late_delivery_20_partial_refund";
-    const DEFAULT_SCENARIO_ID = "late_delivery_20_partial_refund";
-    const ACTIVE_SCENARIO_ID = (() => {
-      const explicitOverride = String(SCENARIO_OVERRIDE || "").trim();
-      if (explicitOverride) return explicitOverride;
-
-      const urlScenarioId = new URLSearchParams(window.location.search).get("scenarioId");
-      return String(urlScenarioId || "").trim() || DEFAULT_SCENARIO_ID;
-    })();
+    const ACTIVE_SCENARIO_ID = resolveScenarioId();
     const HIDE_SCENARIO_DROPDOWN = true;
 
     const STORE = window.localStorage;
@@ -1406,12 +1450,17 @@ NOTES
     const endAreaEl = document.getElementById('endArea');
     const STATIC_VOICE_INSTRUCTIONS = [
       "Click <strong>Start</strong> and allow microphone access.",
+      "Begin the call by stating your <strong>Chewy greeting</strong>.",
       "Support the customer as you would on a live call.",
       "Use Coach Chewy for guidance.",
       "Click <strong>End</strong> to receive feedback."
     ];
 
     const transcriptTurns = [];
+    const realtimeTranscriptBuffers = {
+      agent: new Map(),
+      assistant: new Map()
+    };
     window.transcriptTurns = transcriptTurns;
 
     let sessionId = null;
@@ -1537,10 +1586,167 @@ NOTES
       return true;
     }
 
-    function addTurn(who, text) {
+    function normalizeTranscriptText(text) {
+      return String(text || "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function isSimilarTranscriptText(left, right) {
+      const a = normalizeTranscriptText(left);
+      const b = normalizeTranscriptText(right);
+      if (!a || !b) return false;
+      if (a === b) return true;
+      if (a.length >= 18 && b.length >= 18 && (a.includes(b) || b.includes(a))) return true;
+
+      const leftTokens = new Set(a.split(" ").filter(Boolean));
+      const rightTokens = new Set(b.split(" ").filter(Boolean));
+      if (!leftTokens.size || !rightTokens.size) return false;
+
+      let overlap = 0;
+      for (const token of leftTokens) {
+        if (rightTokens.has(token)) overlap += 1;
+      }
+      const smaller = Math.min(leftTokens.size, rightTokens.size);
+      return smaller >= 4 && overlap / smaller >= 0.82;
+    }
+
+    function isDuplicateTranscriptTurn(speaker, text, source, itemId) {
+      const normalizedSpeaker = String(speaker || "").trim().toLowerCase();
+      const t = String(text || "").trim();
+      if (!normalizedSpeaker || !t) return true;
+
+      if (itemId && transcriptTurns.some((turn) => turn.speaker === normalizedSpeaker && turn.item_id === itemId)) {
+        return true;
+      }
+
+      const currentTime = Date.now();
+      return transcriptTurns.some((turn) => {
+        if (turn.speaker !== normalizedSpeaker) return false;
+        if (!isSimilarTranscriptText(turn.text, t)) return false;
+        if (source === "browser_speech_recognition" && turn.source === "realtime_input_audio_transcription") return true;
+        const turnTime = Date.parse(turn.timestamp || "");
+        return Number.isFinite(turnTime) ? Math.abs(currentTime - turnTime) < 15000 : true;
+      });
+    }
+
+    function addTurn(speaker, text, options = {}) {
+      const normalizedSpeaker = String(speaker || "").trim().toLowerCase();
+      const resolvedSpeaker = normalizedSpeaker === "agent" ? "agent" : "customer";
       const t = String(text || "").trim();
       if (!t) return;
-      transcriptTurns.push({ who, text: t, t: now() });
+
+      const source = String(options.source || "unknown").trim() || "unknown";
+      const itemId = String(options.item_id || options.itemId || "").trim();
+      const timestamp = String(options.timestamp || now()).trim();
+
+      if (itemId) {
+        const existing = transcriptTurns.find((turn) => turn.speaker === resolvedSpeaker && turn.item_id === itemId);
+        if (existing) {
+          if (normalizeTranscriptText(t).length >= normalizeTranscriptText(existing.text).length) {
+            existing.text = t;
+            existing.timestamp = timestamp;
+            existing.source = source;
+          }
+          return;
+        }
+      }
+
+      if (source === "realtime_input_audio_transcription") {
+        const browserFallback = transcriptTurns.find((turn) =>
+          turn.speaker === resolvedSpeaker &&
+          turn.source === "browser_speech_recognition" &&
+          isSimilarTranscriptText(turn.text, t)
+        );
+        if (browserFallback) {
+          browserFallback.text = t;
+          browserFallback.timestamp = timestamp;
+          browserFallback.source = source;
+          browserFallback.item_id = itemId;
+          return;
+        }
+      }
+
+      if (isDuplicateTranscriptTurn(resolvedSpeaker, t, source, itemId)) return;
+
+      transcriptTurns.push({
+        speaker: resolvedSpeaker,
+        text: t,
+        timestamp,
+        source,
+        item_id: itemId
+      });
+    }
+
+    function clearTranscriptState() {
+      transcriptTurns.length = 0;
+      realtimeTranscriptBuffers.agent.clear();
+      realtimeTranscriptBuffers.assistant.clear();
+    }
+
+    function getRealtimeItemId(msg) {
+      return String(
+        msg?.item_id ||
+        msg?.itemId ||
+        msg?.item?.id ||
+        msg?.output_item_id ||
+        msg?.outputItemId ||
+        ""
+      ).trim();
+    }
+
+    function getRealtimeTranscriptText(msg) {
+      if (typeof msg?.transcript === "string") return msg.transcript;
+      if (typeof msg?.text === "string") return msg.text;
+      if (typeof msg?.delta === "string") return msg.delta;
+
+      const content = Array.isArray(msg?.item?.content) ? msg.item.content : [];
+      return content
+        .map((part) => String(part?.transcript || part?.text || "").trim())
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    function getTranscriptBuffer(speaker) {
+      return speaker === "agent" ? realtimeTranscriptBuffers.agent : realtimeTranscriptBuffers.assistant;
+    }
+
+    function appendRealtimeTranscriptDelta(speaker, msg, source) {
+      const delta = String(msg?.delta || "").trim();
+      if (!delta) return;
+
+      const itemId = getRealtimeItemId(msg) || `${speaker}:${source}:active`;
+      const buffer = getTranscriptBuffer(speaker);
+      const current = buffer.get(itemId) || { text: "", item_id: itemId };
+      current.text += delta;
+      current.item_id = itemId;
+      buffer.set(itemId, current);
+    }
+
+    function completeRealtimeTranscript(speaker, msg, source) {
+      const itemId = getRealtimeItemId(msg) || `${speaker}:${source}:active`;
+      const buffer = getTranscriptBuffer(speaker);
+      const buffered = buffer.get(itemId);
+      const completedText = getRealtimeTranscriptText(msg);
+      const text = String(completedText || buffered?.text || "").trim();
+
+      if (text) {
+        addTurn(speaker, text, { source, item_id: itemId });
+      }
+
+      buffer.delete(itemId);
+    }
+
+    function flushRealtimeTranscriptBuffers(speaker, source) {
+      const buffer = getTranscriptBuffer(speaker);
+      for (const [itemId, entry] of buffer.entries()) {
+        const text = String(entry?.text || "").trim();
+        if (text) addTurn(speaker, text, { source, item_id: itemId });
+        buffer.delete(itemId);
+      }
     }
 
     function getScenarioId() { return ACTIVE_SCENARIO_ID; }
@@ -1743,6 +1949,11 @@ NOTES
       startBtn.disabled = true;
       scenarioLoadFailed = false;
 
+      if (!ACTIVE_SCENARIO_ID) {
+        renderScenarioUnavailable(MISSING_SCENARIO_ID_MESSAGE);
+        return;
+      }
+
       const data = await fetchJSON(SCENARIOS_URL, { method: "GET" }, 15000);
 
       if (!(data && Array.isArray(data.scenarios) && data.scenarios.length)) {
@@ -1919,7 +2130,8 @@ NOTES
       return "You're getting there...";
     }
 
-    function resultSubhead(score) {
+    function resultSubhead(score, coachingMoments = 0) {
+      if (score >= 80 && coachingMoments === 0) return "You met the target. Keep using the behaviors you demonstrated.";
       if (score >= 80) return "You met the target. Review the coaching moments to keep the behavior consistent.";
       return "You did not pass this attempt yet. Review the coaching moments, then try again.";
     }
@@ -2053,6 +2265,7 @@ NOTES
           (focus ? `Keep practicing ${focus.behavior_label || focus.behavior_name.replaceAll("_", " ")} so your response feels specific to the customer's situation.` : "Keep practicing clear, specific responses that match the customer's situation.");
         const wentWellPoints = summaryPoints(evaluation?.what_went_well_points, wentWell);
         const strengthenPoints = summaryPoints(evaluation?.what_to_strengthen_next_points, strengthen);
+        const summaryNextStepLabel = coachingMoments > 0 ? "OPPORTUNITY" : "KEEP BUILDING";
         const summaryText =
           String(evaluation?.summary || "").trim() ||
           `${wentWell} ${strengthen}`;
@@ -2061,7 +2274,7 @@ NOTES
         html += `<section class="result-hero">`;
         html += `<div class="report-kicker">Coaching Report</div>`;
         html += `<h2>${escHtml(resultHeadline(normalized.final_score))}</h2>`;
-        html += `<p>${escHtml(resultSubhead(normalized.final_score))}</p>`;
+        html += `<p>${escHtml(resultSubhead(normalized.final_score, coachingMoments))}</p>`;
         html += `<div class="metric-grid">`;
         html += `<div class="metric-card"><span>Overall score</span><strong>${escHtml(String(normalized.final_score))}%</strong></div>`;
         html += `<div class="metric-card"><span>Target</span><strong>${targetScore}%</strong></div>`;
@@ -2074,7 +2287,7 @@ NOTES
         html += `<div class="summary-coach-card"><div class="coach-summary-avatar"><img src="${COACH_CHEWY_IMAGE_SRC}" alt="" /></div><div class="coach-summary-notes">`;
         html += `<p>${escHtml(summaryText)}</p>`;
         html += `<div class="coaching-note"><strong>DOING WELL</strong>${renderSummaryPoints(wentWellPoints)}</div>`;
-        html += `<div class="coaching-note"><strong>OPPORTUNITY</strong>${renderSummaryPoints(strengthenPoints)}</div>`;
+        html += `<div class="coaching-note"><strong>${summaryNextStepLabel}</strong>${renderSummaryPoints(strengthenPoints)}</div>`;
         html += `</div></div></section>`;
 
         html += `<div class="behavior-section-header"><h2 class="behavior-section-title">Customer Care Behaviors</h2>`;
@@ -2196,7 +2409,7 @@ NOTES
           const res = e.results[i];
           if (res.isFinal) finalText += res[0].transcript.trim() + " ";
         }
-        if (finalText) addTurn("agent", finalText.trim());
+        if (finalText) addTurn("agent", finalText.trim(), { source: "browser_speech_recognition" });
       };
 
       recognition.onend = () => { if (recognizing) recognition.start(); };
@@ -2224,7 +2437,10 @@ NOTES
 
     function joinTurnsToTranscriptText(turns) {
       return (turns || [])
-        .map(t => `${t.who === "agent" ? "Agent" : "Customer"}: ${t.text}`)
+        .filter((turn) => turn && String(turn.text || "").trim())
+        .slice()
+        .sort((a, b) => String(a.timestamp || "").localeCompare(String(b.timestamp || "")))
+        .map((turn) => `${turn.speaker === "agent" ? "Agent" : "Customer"}: ${String(turn.text || "").trim()}`)
         .join("\n")
         .trim();
     }
@@ -2379,14 +2595,6 @@ NOTES
     function attachRealtimeMessageHandlers(channel) {
       if (!channel) return;
 
-      let customerBuffer = "";
-
-      const flushCustomer = () => {
-        const t = customerBuffer.trim();
-        if (t) addTurn("customer", t);
-        customerBuffer = "";
-      };
-
       channel.onmessage = (e) => {
         let msg; try { msg = JSON.parse(e.data); } catch { return; }
         const type = String(msg.type || "");
@@ -2416,50 +2624,59 @@ NOTES
         }
 
         if (type === "response.done" || type === "response.completed") {
-          flushCustomer();
+          flushRealtimeTranscriptBuffers("customer", "realtime_assistant_transcript");
           setStatus("Connected. Start talking.");
           return;
         }
 
+        if (type === "conversation.item.input_audio_transcription.delta") {
+          appendRealtimeTranscriptDelta("agent", msg, "realtime_input_audio_transcription");
+          return;
+        }
+        if (type === "conversation.item.input_audio_transcription.completed") {
+          completeRealtimeTranscript("agent", msg, "realtime_input_audio_transcription");
+          return;
+        }
+
         if (type === "response.output_text.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.output_text.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.output_audio_transcript.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.output_audio_transcript.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.audio_transcript.delta" && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type === "response.audio_transcript.done") {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if ((type.endsWith("transcript.delta") || type.endsWith("transcript.text.delta")) && typeof msg.delta === "string") {
-          customerBuffer += msg.delta;
+          appendRealtimeTranscriptDelta("customer", msg, "realtime_assistant_transcript");
           return;
         }
         if (type.endsWith("transcript.done") || type.endsWith("transcript.text.done")) {
-          flushCustomer();
+          completeRealtimeTranscript("customer", msg, "realtime_assistant_transcript");
           return;
         }
 
         if (type === "response.message" && msg.role === "assistant" && Array.isArray(msg.content)) {
           const t = msg.content.map(c => c && c.text ? c.text : "").filter(Boolean).join(" ").trim();
-          if (t) addTurn("customer", t);
+          if (t) addTurn("customer", t, { source: "realtime_assistant_transcript", item_id: getRealtimeItemId(msg) });
           return;
         }
       };
@@ -2552,7 +2769,7 @@ NOTES
       coachContainer.hidden = true;
       coachContainer.classList.remove('reveal');
       coachEl.textContent = "After the call ends, your coaching will appear here.";
-      transcriptTurns.length = 0;
+      clearTranscriptState();
 
       expandGuide();
       showGuide();
@@ -2720,7 +2937,7 @@ NOTES
 
         coachEl.innerHTML = rendered;
         setStatus("Coaching ready.");
-        transcriptTurns.length = 0;
+        clearTranscriptState();
         startBtn.disabled = false;
         coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
@@ -2748,7 +2965,7 @@ NOTES
           errorText: ""
         });
 
-        transcriptTurns.length = 0;
+        clearTranscriptState();
         startBtn.disabled = false;
         coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
@@ -2781,14 +2998,14 @@ NOTES
         errorText: msg
       });
 
-      transcriptTurns.length = 0;
+      clearTranscriptState();
       startBtn.disabled = false;
       coachContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function resetForNewAttempt() {
       evaluationRetryCancelled = false;
-      transcriptTurns.length = 0;
+      clearTranscriptState();
       sessionId = null;
       startedAt = null;
       try { STORE.removeItem(getVoiceStorageKey()); } catch (_) { }

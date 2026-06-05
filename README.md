@@ -11,7 +11,7 @@ The backend is the source of truth for scenarios, customer behavior, evaluation,
 
 ## How it works at a high level
 
-`Lambda.js` contains the `SCENARIOS` object and serves scenario configuration to both frontends.
+`Lambda.js` serves scenario configuration to both frontends by reading the selected scenario from the S3 scenario library.
 
 - Chat and voice stay separate in the UI.
 - Both frontends load scenario-specific display/config data from `GET /scenario`.
@@ -35,8 +35,9 @@ Scenario selection is controlled in each frontend by:
 
 For a new scenario:
 1. Use the GPT prompt in `gpt-scenario-generation-prompt.md` with the Customer Simulator Scenario Builder.
-2. Paste the generated scenario JSON into `SCENARIOS` in `Lambda.js`.
-3. Point the frontend to that scenario with `SCENARIO_OVERRIDE` or `?scenarioId=...`.
+2. Upload one scenario object to `scenarios/{normalized_scenario_id}.json` in the configured S3 scenario library bucket.
+3. Add that scenario to `index.json`.
+4. Point the frontend to that scenario with `SCENARIO_OVERRIDE` or `?scenarioId=...`.
 
 ## AWS setup
 
@@ -46,6 +47,8 @@ Required Lambda environment variables:
 - `COACHING_TABLE`
 - `INGEST_TOKEN`
 - `AWS_REGION`
+- `SCENARIO_LIBRARY_BUCKET`
+- `SCENARIO_LIBRARY_PREFIX` (optional)
 
 Required API routes:
 
@@ -59,7 +62,8 @@ Required API routes:
 Practical notes:
 
 - `GET /scenario` is what the frontends use to load scenario-specific guidance and configuration.
-- `GET /scenarios` is useful for listing available scenarios and voice discovery flows.
+- `GET /scenario`, `POST /chat-turn`, `POST /session`, and `POST /evaluate` load only the requested `scenarios/{normalized_scenario_id}.json` object from S3.
+- `GET /scenarios` reads `index.json` and is useful for listing available scenarios and voice discovery flows.
 - `POST /coaching` writes to DynamoDB using `COACHING_TABLE`. Behavior-framework payloads write one item per completed learner attempt so the DynamoDB to S3 to Snowflake to OmniReach pipeline keeps one dashboard row per learner session.
 - Make sure CORS is configured for the domain or LMS origin that will host the HTML files.
 
@@ -94,12 +98,14 @@ Recommended workflow:
 1. Start with the GPT "Customer Simulator Scenario Builder".
 2. Have it generate runtime-valid scenario JSON using the current contract.
 3. Review the output against `scenario-authoring-guide.md`.
-4. Paste the final scenario object into `SCENARIOS` in `Lambda.js`.
-5. Test the scenario in chat and/or voice depending on the channels you enabled.
+4. Save the final scenario object as `scenarios/{normalized_scenario_id}.json` in the S3 scenario library bucket.
+5. Add or update the corresponding entry in `index.json`.
+6. Test the scenario in chat and/or voice depending on the channels you enabled.
 
 Important:
 
-- `Lambda.js` is the backend source of truth for scenarios.
+- The S3 scenario library is the backend source of truth for scenarios.
+- Runtime scenario files must be single scenario objects. Batch array files are not supported by the Rise runtime; split batches into individual scenario files before upload.
 - Do not create new scenarios only in the frontend.
 - The frontend should consume scenario data from `/scenario`, not hardcoded scenario copy whenever backend config is available.
 
@@ -108,7 +114,7 @@ Important:
 Key files:
 
 - `Lambda.js`
-  Backend routes, scenario definitions, prompt construction, evaluation, and coaching persistence.
+  Backend routes, S3 scenario loading, prompt construction, evaluation, and coaching persistence.
 - `ArticulateRise-ChatExperience.html`
   Standalone chat experience for Rise or browser embedding.
 - `ArticulateRise-VoiceExperience.html`
@@ -163,8 +169,8 @@ The behavior-framework row intentionally omits redundant, empty, or internal fie
 ## Notes / important behaviors
 
 - Chat and voice are separate experiences and can point to different scenarios.
-- Cleaned scenarios in `Lambda.js` use the current runtime contract. Older scenarios may still be using compatibility paths until they are refactored.
-- Generated scenario JSON should be pasted directly into `SCENARIOS` in `Lambda.js`.
+- Cleaned scenarios in S3 use the current runtime contract. Older scenarios may still be using compatibility paths until they are refactored.
+- Generated scenario JSON should be uploaded as one object per scenario to the S3 scenario library.
 - `simulation.stateModel.chatStepProgression` is the source of truth for chat progression in cleaned scenarios.
 - Because prompt behavior lives in scenario data and backend logic, small wording changes can change learner experience.
 - There is no full automated test suite here yet, so test changes end to end after updating scenarios, prompts, or frontend config.
