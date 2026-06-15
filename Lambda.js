@@ -433,6 +433,70 @@ function scenarioUnavailablePayload(scenarioId) {
 
 function buildScenarioClientConfig(s) {
   const scenario = s && typeof s === "object" ? s : {};
+  const normalizeCoachSteps = (items) =>
+    Array.isArray(items)
+      ? items
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const id = String(item.id || "").trim();
+            const title = String(item.title || item.label || "").trim();
+            const body = String(item.body || item.description || item.guidance || "").trim();
+            const bullets = Array.isArray(item.bullets)
+              ? item.bullets.map((bullet) => String(bullet || "").trim()).filter(Boolean)
+              : [];
+            if (!title && !body && !bullets.length) return null;
+            return { id, title, body, bullets };
+          })
+          .filter(Boolean)
+      : [];
+  const normalizeSystemWalkthrough = (walkthrough) => {
+    if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
+    const screens = walkthrough.screens
+      .map((screen) => {
+        if (!screen || typeof screen !== "object") return null;
+        const id = String(screen.id || "").trim();
+        if (!id) return null;
+        const image = screen.image && typeof screen.image === "object" ? screen.image : {};
+        const hotspots = Array.isArray(screen.hotspots)
+          ? screen.hotspots
+              .map((hotspot) => {
+                if (!hotspot || typeof hotspot !== "object") return null;
+                const fact = hotspot.fact && typeof hotspot.fact === "object"
+                  ? {
+                      id: String(hotspot.fact.id || "").trim(),
+                      title: String(hotspot.fact.title || "").trim(),
+                      body: String(hotspot.fact.body || "").trim()
+                    }
+                  : null;
+                const targetScreenId = String(hotspot.targetScreenId || "").trim();
+                if (!fact && !targetScreenId) return null;
+                return {
+                  id: String(hotspot.id || "").trim(),
+                  label: String(hotspot.label || "").trim(),
+                  x: Number(hotspot.x) || 0,
+                  y: Number(hotspot.y) || 0,
+                  width: Number(hotspot.width) || 0,
+                  height: Number(hotspot.height) || 0,
+                  targetScreenId,
+                  fact
+                };
+              })
+              .filter(Boolean)
+          : [];
+        return {
+          id,
+          title: String(screen.title || screen.label || "").trim(),
+          image: {
+            assetKey: String(image.assetKey || "").trim(),
+            src: String(image.src || image.url || "").trim(),
+            alt: String(image.alt || "").trim()
+          },
+          hotspots
+        };
+      })
+      .filter(Boolean);
+    return screens.length ? { screens } : null;
+  };
   const normalizeHotkeys = (items) =>
     Array.isArray(items)
       ? items
@@ -530,6 +594,8 @@ function buildScenarioClientConfig(s) {
               })
               .filter(Boolean)
           : [],
+        coachSteps: normalizeCoachSteps(scenario?.frontend?.chat?.coachSteps),
+        systemWalkthrough: normalizeSystemWalkthrough(scenario?.frontend?.chat?.systemWalkthrough),
         initialTranscript: Array.isArray(scenario?.frontend?.chat?.initialTranscript)
           ? scenario.frontend.chat.initialTranscript
               .map((turn) => {
@@ -1644,6 +1710,23 @@ function buildBehaviorDashboardColumns(behaviors) {
   return out;
 }
 
+function normalizeSystemWalkthroughEventsForSave(events) {
+  if (!Array.isArray(events)) return [];
+  return events
+    .map((event) => {
+      if (!event || typeof event !== "object") return null;
+      return {
+        type: String(event.type || "").trim(),
+        screenId: String(event.screenId || "").trim(),
+        hotspotId: String(event.hotspotId || "").trim(),
+        targetScreenId: String(event.targetScreenId || "").trim(),
+        factId: String(event.factId || "").trim(),
+        occurredAt: String(event.occurredAt || "").trim()
+      };
+    })
+    .filter((event) => event && (event.type || event.screenId || event.hotspotId || event.targetScreenId || event.factId));
+}
+
 function buildCoachingDynamoItems(body) {
   const sessionId = String(body.simulation_session_id || body.simulationSessionId || body.sessionId || "").trim();
   const completedAt = String(body.completed_at || body.completedAt || body.endedAt || new Date().toISOString()).trim();
@@ -1678,6 +1761,7 @@ function buildCoachingDynamoItems(body) {
     coachSummaryText: String(body.coachSummaryText || body.coach_summary_text || body.summary || "").trim(),
     what_went_well: String(body.what_went_well || body.whatWentWell || "").trim(),
     what_to_strengthen_next: String(body.what_to_strengthen_next || body.whatToStrengthenNext || "").trim(),
+    systemWalkthroughEvents: normalizeSystemWalkthroughEventsForSave(body.systemWalkthroughEvents),
     final_score: normalized.final_score,
     focus_behavior: normalized.focus_behavior ? normalized.focus_behavior.behavior_name : "",
     ...buildBehaviorDashboardColumns(normalized.behaviors)

@@ -23,6 +23,21 @@
       "resolutionContext": "Important background needed for resolution"
     }
   },
+  "chatConfig": {
+    "stepProgression": [
+      {
+        "id": 0,
+        "match": {
+          "any": [
+            {
+              "op": "contains_any",
+              "phrases": ["help", "look into", "support"]
+            }
+          ]
+        }
+      }
+    ]
+  },
   "frontend": {
     "shared": {
       "introInstructions": [
@@ -56,6 +71,71 @@
           "pauseAfter": true
         }
       ],
+      "systemWalkthrough": {
+        "screens": [
+          {
+            "id": "learn-start",
+            "title": "Learn Start",
+            "image": {
+              "assetKey": "learn-start-screen",
+              "src": "",
+              "alt": "System screen shown behind the Learn start modal"
+            },
+            "guide": {
+              "type": "modal",
+              "title": "Learn",
+              "body": "Use this step for general information that does not need to point to a specific on-screen element.",
+              "buttonLabel": "Start",
+              "nextScreenId": "status-screen",
+              "showBackdrop": true
+            },
+            "hotspots": []
+          },
+          {
+            "id": "status-screen",
+            "title": "Status",
+            "image": {
+              "assetKey": "status-screen",
+              "src": "",
+              "alt": "System screen with the target status area"
+            },
+            "guide": {
+              "type": "tooltip",
+              "title": "",
+              "body": "Let's complete the incident and stay in Available for the next contact.",
+              "buttonLabel": "Next",
+              "placement": "left",
+              "nextScreenId": "next-screen",
+              "spotlightHotspotId": "status-dropdown",
+              "showBeacon": true,
+              "showBackdrop": true,
+              "showSpotlight": true
+            },
+            "hotspots": [
+              {
+                "id": "status-dropdown",
+                "label": "Available status dropdown",
+                "x": 69,
+                "y": 4,
+                "width": 28,
+                "height": 17,
+                "action": "advance",
+                "targetScreenId": "next-screen"
+              }
+            ]
+          },
+          {
+            "id": "next-screen",
+            "title": "Next System Screen",
+            "image": {
+              "assetKey": "next-system-screen",
+              "src": "",
+              "alt": "Next system screen"
+            },
+            "hotspots": []
+          }
+        ]
+      },
       "initialTranscript": [
         {
           "role": "assistant",

@@ -1,0 +1,36 @@
+{
+  "id": "on_time_delivery_no_partial_refund_needed_chat",
+  "label": "On-Time Delivery, No Partial Refund Needed",
+  "title": "On-Time Delivery, No Partial Refund Needed",
+  "channels": ["chat"],
+  "frontend": {
+    "chat": {
+      "initialTranscript": [
+        {
+          "role": "assistant",
+          "label": "Customer",
+          "content": "Can you check whether my order is still on time?"
+        }
+      ],
+      "guideSections": [
+        {
+          "title": "Check the Order",
+          "body": "Confirm the order status and set a clear expectation.",
+          "bullets": [
+            "Acknowledge the customer's concern.",
+            "Verify the order status before offering a resolution."
+          ],
+          "pauseAfter": false
+        }
+      ]
+    }
+  },
+  "coaching": {
+    "qualityChecklist": [
+      {
+        "category": "Issue Understanding",
+        "behaviors": ["Understands the delivery status question."]
+      }
+    ]
+  }
+}

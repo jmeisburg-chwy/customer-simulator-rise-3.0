@@ -245,6 +245,16 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
     what_to_strengthen_next: "Keep making empathy specific to the customer's situation.",
     what_went_well_points: ["Confirmed the late delivery", "Set a clear timeline"],
     what_to_strengthen_next_points: ["Use more specific empathy", "Avoid shifting action back to the customer"],
+    systemWalkthroughEvents: [
+      {
+        type: "fact",
+        screenId: "order",
+        hotspotId: "refund-fact",
+        targetScreenId: "",
+        factId: "refund",
+        occurredAt: "2026-05-13T11:58:00.000Z"
+      }
+    ],
     behavior_results: behaviorResults
   });
 
@@ -278,6 +288,16 @@ test("builds one dashboard-friendly session item for DynamoDB reporting", () => 
   assert.strictEqual(item.coachSummaryText, "You handled the late delivery with clear ownership and helpful next steps.");
   assert.strictEqual(item.what_went_well, "You identified the delivery problem and gave a clear replacement timeline.");
   assert.strictEqual(item.what_to_strengthen_next, "Keep making empathy specific to the customer's situation.");
+  assert.deepStrictEqual(item.systemWalkthroughEvents, [
+    {
+      type: "fact",
+      screenId: "order",
+      hotspotId: "refund-fact",
+      targetScreenId: "",
+      factId: "refund",
+      occurredAt: "2026-05-13T11:58:00.000Z"
+    }
+  ]);
   assert.strictEqual(item.final_score, 66.7);
   assert.strictEqual(item.focus_behavior, "problem_ownership");
   assert.ok(!Object.hasOwn(item, "agentName"));
@@ -721,6 +741,79 @@ test("scenario client config preserves scripted chat customer responses", () => 
   const config = buildScenarioClientConfig(scenario);
   assert.strictEqual(config.chatConfig.stepProgression[0].label, "Ask pet name");
   assert.strictEqual(config.chatConfig.stepProgression[0].customerResponse, "His name is Rocky and he's a Corgi.");
+});
+
+test("scenario client config preserves AWR chat coach steps and system walkthrough contract", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "awr_contract_chat",
+    label: "AWR Contract",
+    title: "AWR Contract",
+    channels: ["chat"],
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Hi, can you help?" }],
+        guideSections: [{ title: "Legacy", bullets: ["Fallback guidance."] }],
+        coachSteps: [
+          { id: "greet", title: "Greet", body: "Open warmly." },
+          { id: "solve", title: "Solve", body: "Resolve the issue." }
+        ],
+        systemWalkthrough: {
+          screens: [
+            {
+              id: "order",
+              title: "Order Details",
+              image: { assetKey: "order-details" },
+              hotspots: [
+                {
+                  id: "refund-fact",
+                  label: "Refund fact",
+                  x: 12,
+                  y: 20,
+                  width: 16,
+                  height: 8,
+                  fact: {
+                    id: "refund",
+                    title: "Refund status",
+                    body: "Refund is available."
+                  }
+                },
+                {
+                  id: "nav-customer",
+                  label: "Customer screen",
+                  x: 45,
+                  y: 55,
+                  width: 12,
+                  height: 10,
+                  targetScreenId: "customer"
+                }
+              ]
+            },
+            {
+              id: "customer",
+              title: "Customer Profile",
+              image: { assetKey: "customer-profile" },
+              hotspots: []
+            }
+          ]
+        }
+      }
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Issue Understanding", behaviors: ["Understands the issue."] }]
+    }
+  });
+
+  const config = buildScenarioClientConfig(scenario);
+
+  assert.deepStrictEqual(config.frontend.chat.coachSteps, [
+    { id: "greet", title: "Greet", body: "Open warmly.", bullets: [] },
+    { id: "solve", title: "Solve", body: "Resolve the issue.", bullets: [] }
+  ]);
+  assert.strictEqual(config.frontend.chat.systemWalkthrough.screens.length, 2);
+  assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].image.assetKey, "order-details");
+  assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].hotspots[0].fact.id, "refund");
+  assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].hotspots[1].targetScreenId, "customer");
+  assert.strictEqual(config.frontend.chat.systemTools, undefined);
 });
 
 test("chat scripted response rule overrides closing guidance", () => {

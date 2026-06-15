@@ -87,6 +87,19 @@ NOTES
       padding: 0;
     }
 
+    html.full-preview,
+    html.full-preview body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    html.full-preview .page {
+      height: 100vh;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
     .experience-card {
       width: 100%;
       background: var(--accordion-bg);
@@ -95,8 +108,19 @@ NOTES
       overflow: hidden;
     }
 
+    html.full-preview .experience-card {
+      height: 100%;
+      border: 0;
+      border-radius: 0;
+      background: var(--page-bg);
+    }
+
     .experience-card details {
       width: 100%;
+    }
+
+    html.full-preview .experience-card details {
+      height: 100%;
     }
 
     .experience-card summary {
@@ -108,6 +132,10 @@ NOTES
       justify-content: space-between;
       gap: 24px;
       background: var(--accordion-bg);
+    }
+
+    html.full-preview .experience-card summary {
+      display: none;
     }
 
     .experience-card summary::-webkit-details-marker {
@@ -170,12 +198,22 @@ NOTES
       background: transparent;
     }
 
+    html.full-preview .experience-body {
+      display: block;
+      height: 100%;
+      padding: 0;
+    }
+
     .experience-card details[open] .experience-body {
       display: block;
     }
 
     .instructions-wrap {
       padding: 0 20px 24px 20px;
+    }
+
+    html.full-preview .instructions-wrap {
+      display: none;
     }
 
     .instructions-card {
@@ -240,6 +278,11 @@ NOTES
       padding: 0 20px;
     }
 
+    html.full-preview .sim-shell {
+      height: 100%;
+      padding: 0;
+    }
+
     .viewport {
       width: 100%;
       height: 720px;
@@ -247,6 +290,11 @@ NOTES
       position: relative;
       background: var(--page-bg);
       border-radius: 20px;
+    }
+
+    html.full-preview .viewport {
+      height: 100vh;
+      border-radius: 0;
     }
 
     .stage {
@@ -262,7 +310,7 @@ NOTES
       width: 100%;
       height: 100%;
       display: grid;
-      grid-template-columns: 0.92fr 1.08fr;
+      grid-template-columns: 0.55fr 0.65fr 1.4fr;
       gap: 10px;
       padding: 8px;
       align-items: stretch;
@@ -287,14 +335,288 @@ NOTES
       min-height: 0;
     }
 
-    .guide-panel {
+    .coach-panel,
+    .system-tools-panel {
       display: grid;
       grid-template-rows: auto 1fr;
       min-height: 0;
     }
 
+    .system-tools-panel {
+      background: #f8fafc;
+    }
+
+    .system-tools-body {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 12px;
+      min-height: 0;
+      background: #f4f7fb;
+    }
+
+    .system-screen {
+      min-height: 0;
+      border: 1px solid #d8e2f0;
+      border-radius: 10px;
+      background: #ffffff;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .system-screen-title {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 800;
+      color: #111827;
+      border-bottom: 1px solid #e7edf6;
+      background: #ffffff;
+    }
+
+    .system-screenshot-wrap {
+      position: relative;
+      min-height: 0;
+      background: #e8eef7;
+      overflow: hidden;
+    }
+
+    .system-screenshot {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: #ffffff;
+    }
+
+    .system-screenshot-placeholder {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      text-align: center;
+      color: #475467;
+      font-size: 18px;
+      line-height: 1.35;
+      background:
+        linear-gradient(#ffffff, #ffffff) padding-box,
+        repeating-linear-gradient(135deg, #e7eef8 0, #e7eef8 10px, #f4f7fb 10px, #f4f7fb 20px);
+    }
+
+    .system-hotspot-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .system-hotspot {
+      position: absolute;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      pointer-events: auto;
+      padding: 0;
+      outline: none;
+    }
+
+    .system-hotspot:focus-visible {
+      outline: 2px solid rgba(17, 24, 39, 0.78);
+      outline-offset: 2px;
+    }
+
+    .system-guide-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .system-guide-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.44);
+    }
+
+    .system-guide-spotlight {
+      position: absolute;
+      border: 4px solid #1c49c2;
+      box-shadow: 0 0 0 999px rgba(17, 24, 39, 0.24);
+      pointer-events: none;
+    }
+
+    .system-guide-spotlight-alt {
+      border-color: #E3B63D;
+    }
+
+    .system-guide-beacon {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #E80060;
+      box-shadow: 0 0 0 6px rgba(232, 0, 96, 0.18);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .system-guide-card {
+      position: absolute;
+      pointer-events: auto;
+      z-index: 3;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+    }
+
+    .system-guide-modal {
+      top: 50%;
+      left: 50%;
+      width: min(380px, calc(100% - 56px));
+      padding: 28px;
+      background: #ffffff;
+      color: #111827;
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+
+    .system-guide-tooltip {
+      width: 280px;
+      padding: 18px 20px;
+      background: #002956;
+      color: #ffffff;
+    }
+
+    .system-guide-tooltip .system-guide-title {
+      color: #ffffff;
+    }
+
+    .system-guide-tooltip .system-guide-body {
+      color: #ffffff;
+    }
+
+    .system-guide-tooltip::after {
+      content: "";
+      position: absolute;
+      width: 0;
+      height: 0;
+      border: 12px solid transparent;
+    }
+
+    .system-guide-tooltip-right::after {
+      left: -24px;
+      top: 50%;
+      border-right-color: #002956;
+      transform: translateY(-50%);
+    }
+
+    .system-guide-tooltip-left::after {
+      right: -24px;
+      top: 50%;
+      border-left-color: #002956;
+      transform: translateY(-50%);
+    }
+
+    .system-guide-tooltip-top::after {
+      bottom: -24px;
+      left: 50%;
+      border-top-color: #002956;
+      transform: translateX(-50%);
+    }
+
+    .system-guide-tooltip-bottom::after {
+      top: -24px;
+      left: 50%;
+      border-bottom-color: #002956;
+      transform: translateX(-50%);
+    }
+
+    .system-guide-title {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .system-guide-body {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    .system-guide-controls {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .system-guide-back-btn,
+    .system-guide-next-btn {
+      border: 1px solid #ffffff;
+      border-radius: 6px;
+      background: #1c49c2;
+      color: #ffffff;
+      padding: 8px 12px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .system-guide-modal .system-guide-back-btn {
+      border-color: #1c49c2;
+      background: #ffffff;
+      color: #1c49c2;
+    }
+
+    .system-guide-step-count {
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .system-fact-area {
+      min-height: 112px;
+      border: 1px solid #d8e2f0;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .system-fact-kicker {
+      margin: 0;
+      color: #1d4ed8;
+      font-size: 11px;
+      line-height: 1.2;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .system-fact-title {
+      margin: 0;
+      color: #111827;
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .system-fact-body {
+      margin: 0;
+      color: #344054;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
     .guide-header,
-    .chat-header {
+    .chat-header,
+    .system-tools-header {
       padding: 14px 16px;
       border-bottom: 1px solid var(--border);
       background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
@@ -305,7 +627,8 @@ NOTES
     }
 
     .guide-header-row,
-    .chat-header-row {
+    .chat-header-row,
+    .system-tools-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -315,7 +638,8 @@ NOTES
     }
 
     .guide-header-left,
-    .chat-header-left {
+    .chat-header-left,
+    .system-tools-header-left {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -346,7 +670,8 @@ NOTES
     }
 
     .guide-title,
-    .chat-header-title {
+    .chat-header-title,
+    .system-tools-title {
       font-size: 20px;
       font-weight: 700;
       line-height: 1.2;
@@ -374,6 +699,88 @@ NOTES
       padding: 14px;
       background: #fcfdff;
       min-height: 0;
+    }
+
+    .coach-step {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #ffffff;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+    }
+
+    .coach-step:last-child {
+      margin-bottom: 0;
+    }
+
+    .coach-step-marker {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 900;
+      background: #eef2f7;
+      color: #475467;
+      border: 1px solid #d6dfef;
+    }
+
+    .coach-step-completed .coach-step-marker {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    .coach-step-current {
+      border-color: #1d4ed8;
+      background: #f6f9ff;
+      box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.16);
+    }
+
+    .coach-step-current .coach-step-marker {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      color: #ffffff;
+    }
+
+    .coach-step-upcoming {
+      opacity: 0.72;
+    }
+
+    .coach-step-title {
+      margin: 0;
+      color: #111827;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .coach-step-body {
+      margin: 5px 0 0 0;
+      color: #475467;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .coach-step ul {
+      margin: 8px 0 0 0;
+      padding-left: 18px;
+    }
+
+    .coach-step li {
+      margin-bottom: 5px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .coach-step li:last-child {
+      margin-bottom: 0;
     }
 
     .section {
@@ -1621,15 +2028,54 @@ NOTES
             <div class="viewport" id="viewport">
               <div class="stage" id="stage">
                 <div class="app">
+                  <aside class="panel coach-panel">
+                    <div class="guide-header">
+                      <div class="guide-header-row">
+                        <div class="guide-header-left">
+                          <div class="coach-avatar" aria-hidden="true">
+                            <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
+                          </div>
+                          <div class="guide-title" id="rightPaneTitle">Coach Chewy</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="guide-scroll" id="guideScroll">
+                      <div class="guidance-shell" id="guidanceShell"></div>
+
+                      <div class="loading-shell" id="loadingShell">
+                        <div class="loading-card">
+                          <div class="loading-card-inner">
+                            <div class="loading-top">
+                              <div class="spinner" aria-hidden="true"></div>
+                              <h3 class="loading-title">Analyzing your chat...</h3>
+                            </div>
+                            <p class="loading-copy">Coach Chewy is reviewing your responses and building your feedback now. This can take a few seconds.</p>
+                            <div class="skeleton w90"></div>
+                            <div class="skeleton w75"></div>
+                            <div class="skeleton w60"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="feedback-shell" id="feedbackShell">
+                        <div id="feedbackCards"></div>
+
+                        <div class="feedback-card" id="summaryCard" style="display:none;">
+                          <div class="feedback-card-inner">
+                            <h3 class="feedback-card-title">Summary</h3>
+                            <p class="summary-text" id="summaryText"></p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </aside>
+
                   <section class="panel chat-panel">
                     <div class="chat-header">
                       <div class="chat-header-row">
                         <div class="chat-header-left">
-                          <svg class="sim-icon" viewBox="0 0 48 48" aria-hidden="true">
-                            <circle cx="24" cy="24" r="20" fill="#1d4ed8"></circle>
-                            <path d="M15 16.5h18c2.2 0 4 1.8 4 4v9c0 2.2-1.8 4-4 4H25l-7 5v-5h-3c-2.2 0-4-1.8-4-4v-9c0-2.2 1.8-4 4-4z" fill="#ffffff"></path>
-                          </svg>
-                          <div class="chat-header-title">Chewy Customer Simulator</div>
+                          <div class="chat-header-title" id="chatHeaderTitle">Customer: Customer</div>
                         </div>
                         <button class="header-link" type="button" id="headerEndBtn">End</button>
                       </div>
@@ -1717,45 +2163,30 @@ NOTES
                     </div>
                   </section>
 
-                  <aside class="panel guide-panel">
-                    <div class="guide-header">
-                      <div class="guide-header-row">
-                        <div class="guide-header-left">
-                          <div class="coach-avatar" aria-hidden="true">
-                            <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
-                          </div>
-                          <div class="guide-title" id="rightPaneTitle">Coach Chewy Guidance</div>
+                  <aside class="panel system-tools-panel">
+                    <div class="system-tools-header">
+                      <div class="system-tools-header-row">
+                        <div class="system-tools-header-left">
+                          <div class="system-tools-title">System Tools</div>
                         </div>
                       </div>
                     </div>
 
-                    <div class="guide-scroll" id="guideScroll">
-                      <div class="guidance-shell" id="guidanceShell"></div>
-
-                      <div class="loading-shell" id="loadingShell">
-                        <div class="loading-card">
-                          <div class="loading-card-inner">
-                            <div class="loading-top">
-                              <div class="spinner" aria-hidden="true"></div>
-                              <h3 class="loading-title">Analyzing your chat...</h3>
-                            </div>
-                            <p class="loading-copy">Coach Chewy is reviewing your responses and building your feedback now. This can take a few seconds.</p>
-                            <div class="skeleton w90"></div>
-                            <div class="skeleton w75"></div>
-                            <div class="skeleton w60"></div>
-                          </div>
-                        </div>
+                    <div class="system-tools-body">
+                      <div class="system-screen">
+                        <h2 class="system-screen-title" id="walkthroughScreenTitle">System walkthrough</h2>
+                        <div class="system-screenshot-wrap" id="walkthroughScreenWrap">
+	                          <img class="system-screenshot" id="walkthroughImage" alt="" />
+	                          <div class="system-screenshot-placeholder" id="walkthroughPlaceholder">System walkthrough will appear here.</div>
+	                          <div class="system-hotspot-layer" id="walkthroughHotspotLayer"></div>
+	                          <div class="system-guide-layer" id="walkthroughGuideLayer"></div>
+	                        </div>
                       </div>
 
-                      <div class="feedback-shell" id="feedbackShell">
-                        <div id="feedbackCards"></div>
-
-                        <div class="feedback-card" id="summaryCard" style="display:none;">
-                          <div class="feedback-card-inner">
-                            <h3 class="feedback-card-title">Summary</h3>
-                            <p class="summary-text" id="summaryText"></p>
-                          </div>
-                        </div>
+                      <div class="system-fact-area" aria-live="polite">
+                        <p class="system-fact-kicker">Selected Fact</p>
+                        <h2 class="system-fact-title" id="walkthroughFactTitle">Select an area</h2>
+                        <p class="system-fact-body" id="walkthroughFactBody">Use System Tools to review the supporting fact or move to another screen.</p>
                       </div>
                     </div>
                   </aside>
@@ -1770,6 +2201,12 @@ NOTES
 
   <script>
     const chatAccordion = document.getElementById("chatAccordion");
+    const IS_FULL_PREVIEW = ["1", "true", "full", "app"].includes(String(new URLSearchParams(window.location.search).get("preview") || "").trim().toLowerCase());
+
+    if (IS_FULL_PREVIEW) {
+      document.documentElement.classList.add("full-preview");
+      chatAccordion.open = true;
+    }
 
     function syncAccordionLabel() {
       const pill = chatAccordion.querySelector(".experience-pill");
@@ -1905,6 +2342,7 @@ NOTES
     const feedbackShell = document.getElementById("feedbackShell");
     const loadingShell = document.getElementById("loadingShell");
     const rightPaneTitle = document.getElementById("rightPaneTitle");
+    const chatHeaderTitle = document.getElementById("chatHeaderTitle");
     const feedbackCardsEl = document.getElementById("feedbackCards");
     const summaryCardEl = document.getElementById("summaryCard");
     const summaryTextEl = document.getElementById("summaryText");
@@ -1922,6 +2360,14 @@ NOTES
 
     const chatStartedText = document.getElementById("chatStartedText");
     const instructionsListEl = document.getElementById("instructionsList");
+    const walkthroughScreenTitleEl = document.getElementById("walkthroughScreenTitle");
+    const walkthroughScreenWrapEl = document.getElementById("walkthroughScreenWrap");
+    const walkthroughImageEl = document.getElementById("walkthroughImage");
+    const walkthroughPlaceholderEl = document.getElementById("walkthroughPlaceholder");
+    const walkthroughHotspotLayerEl = document.getElementById("walkthroughHotspotLayer");
+    const walkthroughGuideLayerEl = document.getElementById("walkthroughGuideLayer");
+    const walkthroughFactTitleEl = document.getElementById("walkthroughFactTitle");
+    const walkthroughFactBodyEl = document.getElementById("walkthroughFactBody");
 
     const DESIGN_WIDTH = 1280;
     const DESIGN_HEIGHT = 720;
@@ -1931,6 +2377,11 @@ NOTES
     let scenarioDisplayConfig = null;
     let runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
     let runtimeStepProgression = null;
+    let runtimeCoachSteps = [];
+    let runtimeSystemWalkthrough = null;
+    let activeSystemScreenId = "";
+    let selectedSystemHotspotId = "";
+    const systemWalkthroughEvents = [];
     let transcript = JSON.parse(JSON.stringify(initialTranscript));
     let currentStep = 0;
     let chatEnded = false;
@@ -2055,12 +2506,472 @@ NOTES
         .join("");
     }
 
+    function normalizeCoachStepsFromGuideSections(sections) {
+      if (!Array.isArray(sections)) return [];
+      return sections
+        .map((section, index) => {
+          if (!section || typeof section !== "object") return null;
+          const title = String(section.title || "").trim() || `Step ${index + 1}`;
+          const body = String(section.body || "").trim();
+          const bullets = Array.isArray(section.bullets)
+            ? section.bullets.map((item) => String(item || "").trim()).filter(Boolean)
+            : [];
+          return {
+            id: String(section.id || `guide-${index + 1}`).trim(),
+            title,
+            body,
+            bullets
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function normalizeCoachSteps(steps) {
+      if (!Array.isArray(steps)) return [];
+      return steps
+        .map((step, index) => {
+          if (!step || typeof step !== "object") return null;
+          const title = String(step.title || step.label || "").trim() || `Step ${index + 1}`;
+          const body = String(step.body || step.description || step.guidance || "").trim();
+          const bullets = Array.isArray(step.bullets)
+            ? step.bullets.map((item) => String(item || "").trim()).filter(Boolean)
+            : [];
+          return {
+            id: String(step.id || `coach-${index + 1}`).trim(),
+            title,
+            body,
+            bullets
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function renderCoachSteps(steps) {
+      runtimeCoachSteps = Array.isArray(steps) ? steps : [];
+      if (!guidanceShell) return;
+
+      if (!runtimeCoachSteps.length) {
+        guidanceShell.innerHTML = `
+          <div class="section">
+            <h2>Coach Chewy</h2>
+            <p>Guidance will appear here when the scenario loads.</p>
+          </div>
+        `;
+        return;
+      }
+
+      guidanceShell.innerHTML = runtimeCoachSteps
+        .map((step, index) => {
+          const bulletsHtml = step.bullets.length
+            ? `<ul>${step.bullets.map((item) => `<li>${escHtml(item)}</li>`).join("")}</ul>`
+            : "";
+          return `
+            <div class="coach-step coach-step-upcoming" data-coach-step-index="${index}">
+              <div class="coach-step-marker" aria-hidden="true">${index + 1}</div>
+              <div>
+                <h2 class="coach-step-title">${escHtml(step.title)}</h2>
+                ${step.body ? `<p class="coach-step-body">${escHtml(step.body)}</p>` : ""}
+                ${bulletsHtml}
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      renderCoachProgress();
+    }
+
+    function renderCoachProgress() {
+      if (!guidanceShell || !runtimeCoachSteps.length) return;
+      const stepEls = guidanceShell.querySelectorAll("[data-coach-step-index]");
+      stepEls.forEach((el) => {
+        const index = Number(el.getAttribute("data-coach-step-index") || 0);
+        const isCompleted = index < currentStep || currentStep >= runtimeCoachSteps.length;
+        const isCurrent = !isCompleted && index === Math.min(currentStep, runtimeCoachSteps.length - 1);
+        const marker = el.querySelector(".coach-step-marker");
+
+        el.classList.toggle("coach-step-completed", isCompleted);
+        el.classList.toggle("coach-step-current", isCurrent);
+        el.classList.toggle("coach-step-upcoming", !isCompleted && !isCurrent);
+        if (marker) marker.textContent = isCompleted ? "✓" : String(index + 1);
+      });
+    }
+
+    function normalizeSystemGuideType(value) {
+      const type = String(value || "").trim().toLowerCase();
+      return type === "modal" ? "modal" : "tooltip";
+    }
+
+    function normalizeSystemGuidePlacement(value) {
+      const placement = String(value || "").trim().toLowerCase();
+      return ["left", "right", "top", "bottom"].includes(placement) ? placement : "right";
+    }
+
+    function normalizeSystemHotspotAction(hotspot, fact, targetScreenId) {
+      const action = String(hotspot?.action || "").trim().toLowerCase();
+      if (["advance", "fact", "navigation"].includes(action)) return action;
+      if (targetScreenId) return "navigation";
+      if (fact) return "fact";
+      return "advance";
+    }
+
+    function normalizeSystemGuide(guide) {
+      if (!guide || typeof guide !== "object") return null;
+      const title = String(guide.title || "").trim();
+      const body = String(guide.body || guide.text || "").trim();
+      if (!title && !body) return null;
+      const spotlightHotspotId = String(guide.spotlightHotspotId || "").trim();
+
+      return {
+        type: normalizeSystemGuideType(guide.type),
+        title,
+        body,
+        buttonLabel: String(guide.buttonLabel || "Next").trim() || "Next",
+        placement: normalizeSystemGuidePlacement(guide.placement),
+        nextScreenId: String(guide.nextScreenId || "").trim(),
+        spotlightHotspotId,
+        showBackdrop: guide.showBackdrop !== false,
+        showSpotlight: guide.showSpotlight !== false && Boolean(spotlightHotspotId),
+        showBeacon: guide.showBeacon !== false && Boolean(spotlightHotspotId),
+        spotlightColor: String(guide.spotlightColor || (guide.spotlightOnBlue ? "#E3B63D" : "#1c49c2")).trim()
+      };
+    }
+
+    function normalizeSystemWalkthrough(walkthrough) {
+      if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
+      const screens = walkthrough.screens
+        .map((screen, index) => {
+          if (!screen || typeof screen !== "object") return null;
+          const id = String(screen.id || `screen-${index + 1}`).trim();
+          if (!id) return null;
+          const image = screen.image && typeof screen.image === "object" ? screen.image : {};
+          const hotspots = Array.isArray(screen.hotspots)
+            ? screen.hotspots
+                .map((hotspot, hotspotIndex) => {
+                  if (!hotspot || typeof hotspot !== "object") return null;
+                  const fact = hotspot.fact && typeof hotspot.fact === "object"
+                    ? {
+                        id: String(hotspot.fact.id || "").trim(),
+                        title: String(hotspot.fact.title || "").trim(),
+                        body: String(hotspot.fact.body || "").trim()
+                      }
+                    : null;
+                  const targetScreenId = String(hotspot.targetScreenId || "").trim();
+                  const action = normalizeSystemHotspotAction(hotspot, fact, targetScreenId);
+                  if (action !== "advance" && !fact && !targetScreenId) return null;
+                  return {
+                    id: String(hotspot.id || `hotspot-${hotspotIndex + 1}`).trim(),
+                    label: String(hotspot.label || fact?.title || targetScreenId || "Hotspot").trim(),
+                    x: Number(hotspot.x) || 0,
+                    y: Number(hotspot.y) || 0,
+                    width: Number(hotspot.width) || 8,
+                    height: Number(hotspot.height) || 8,
+                    action,
+                    targetScreenId,
+                    fact
+                  };
+                })
+                .filter(Boolean)
+            : [];
+
+          return {
+            id,
+            title: String(screen.title || screen.label || id).trim(),
+            image: {
+              assetKey: String(image.assetKey || "").trim(),
+              src: String(image.src || image.url || "").trim(),
+              alt: String(image.alt || screen.title || "").trim()
+            },
+            guide: normalizeSystemGuide(screen.guide),
+            hotspots
+          };
+        })
+        .filter(Boolean);
+
+      return screens.length ? { screens } : null;
+    }
+
+    function resolveWalkthroughAssetSrc(image) {
+      const src = String(image?.src || "").trim();
+      if (src) return src;
+
+      const assetKey = String(image?.assetKey || "").trim();
+      if (!assetKey) return "";
+      if (/^(https?:|data:|blob:)/i.test(assetKey)) return assetKey;
+
+      const configuredAssets = window.CCS_ASSETS && typeof window.CCS_ASSETS === "object" ? window.CCS_ASSETS : {};
+      return String(configuredAssets[assetKey] || "").trim();
+    }
+
+    function getActiveSystemScreenIndex() {
+      const screens = runtimeSystemWalkthrough?.screens || [];
+      return screens.findIndex((item) => item.id === activeSystemScreenId);
+    }
+
+    function advanceSystemGuide(preferredScreenId = "") {
+      const nextScreenId = resolveNextScreenId(preferredScreenId);
+      if (nextScreenId) {
+        setActiveSystemScreen(nextScreenId);
+        return;
+      }
+
+      clearSystemGuide();
+    }
+
+    function goBackSystemGuide() {
+      const screens = runtimeSystemWalkthrough?.screens || [];
+      const activeIndex = getActiveSystemScreenIndex();
+      const previousScreen = activeIndex > 0 ? screens[activeIndex - 1] : null;
+      if (previousScreen) setActiveSystemScreen(previousScreen.id);
+    }
+
+    function resolveNextScreenId(preferredScreenId = "") {
+      const screens = runtimeSystemWalkthrough?.screens || [];
+      const requestedScreenId = String(preferredScreenId || "").trim();
+      if (requestedScreenId && screens.some((item) => item.id === requestedScreenId)) {
+        return requestedScreenId;
+      }
+
+      const activeIndex = getActiveSystemScreenIndex();
+      const nextScreen = activeIndex >= 0 ? screens[activeIndex + 1] : screens[0];
+      return nextScreen?.id || "";
+    }
+
+    function applyHotspotPosition(el, hotspot) {
+      el.style.left = `${hotspot.x}%`;
+      el.style.top = `${hotspot.y}%`;
+      el.style.width = `${hotspot.width}%`;
+      el.style.height = `${hotspot.height}%`;
+    }
+
+    function positionSystemGuideTooltip(card, guide, hotspot) {
+      if (!hotspot) {
+        card.style.left = "50%";
+        card.style.top = "50%";
+        card.style.transform = "translate(-50%, -50%)";
+        return;
+      }
+
+      const x = hotspot.x;
+      const y = hotspot.y;
+      const width = hotspot.width;
+      const height = hotspot.height;
+      const placement = guide.placement;
+      if (placement === "left") {
+        card.style.right = `${Math.max(2, 100 - x + 3)}%`;
+        card.style.top = `${Math.max(4, Math.min(76, y + height / 2 - 12))}%`;
+      } else if (placement === "top") {
+        card.style.left = `${Math.max(4, Math.min(72, x + width / 2 - 12))}%`;
+        card.style.bottom = `${Math.max(2, 100 - y + 4)}%`;
+      } else if (placement === "bottom") {
+        card.style.left = `${Math.max(4, Math.min(72, x + width / 2 - 12))}%`;
+        card.style.top = `${Math.max(2, y + height + 4)}%`;
+      } else {
+        card.style.left = `${Math.min(72, x + width + 3)}%`;
+        card.style.top = `${Math.max(4, Math.min(76, y + height / 2 - 12))}%`;
+      }
+    }
+
+    function renderSystemGuide(screen) {
+      clearSystemGuide();
+      const guide = screen?.guide;
+      if (!guide || !walkthroughGuideLayerEl) return;
+
+      const spotlightHotspot = screen.hotspots.find((hotspot) => hotspot.id === guide.spotlightHotspotId) || null;
+      const activeIndex = getActiveSystemScreenIndex();
+      const totalScreens = runtimeSystemWalkthrough?.screens?.length || 0;
+      const stepText = totalScreens ? `${Math.max(activeIndex, 0) + 1}/${totalScreens}` : "";
+
+      if (guide.showBackdrop) {
+        const backdrop = document.createElement("div");
+        backdrop.className = "system-guide-backdrop";
+        walkthroughGuideLayerEl.appendChild(backdrop);
+      }
+
+      if (guide.showSpotlight && spotlightHotspot) {
+        const spotlight = document.createElement("div");
+        spotlight.className = `system-guide-spotlight${guide.spotlightColor === "#E3B63D" ? " system-guide-spotlight-alt" : ""}`;
+        spotlight.style.borderColor = guide.spotlightColor;
+        applyHotspotPosition(spotlight, spotlightHotspot);
+        walkthroughGuideLayerEl.appendChild(spotlight);
+      }
+
+      if (guide.showBeacon && spotlightHotspot) {
+        const beacon = document.createElement("div");
+        beacon.className = "system-guide-beacon";
+        beacon.style.left = `${spotlightHotspot.x + spotlightHotspot.width}%`;
+        beacon.style.top = `${spotlightHotspot.y + spotlightHotspot.height / 2}%`;
+        walkthroughGuideLayerEl.appendChild(beacon);
+      }
+
+      const card = document.createElement("div");
+      card.className = guide.type === "modal"
+        ? "system-guide-card system-guide-modal"
+        : `system-guide-card system-guide-tooltip system-guide-tooltip-${guide.placement}`;
+      if (guide.type === "tooltip") positionSystemGuideTooltip(card, guide, spotlightHotspot);
+      card.innerHTML = `
+        ${guide.title ? `<h3 class="system-guide-title">${escHtml(guide.title)}</h3>` : ""}
+        ${guide.body ? `<p class="system-guide-body">${escHtml(guide.body)}</p>` : ""}
+        <div class="system-guide-controls">
+          <button class="system-guide-back-btn" type="button" id="systemGuideBackBtn" ${activeIndex <= 0 ? "disabled" : ""}>Back</button>
+          <span class="system-guide-step-count">${escHtml(stepText)}</span>
+          <button class="system-guide-next-btn" type="button" id="systemGuideNextBtn">${escHtml(guide.buttonLabel)}</button>
+        </div>
+      `;
+      walkthroughGuideLayerEl.appendChild(card);
+
+      const nextBtn = card.querySelector("#systemGuideNextBtn");
+      const backBtn = card.querySelector("#systemGuideBackBtn");
+      if (nextBtn) nextBtn.addEventListener("click", () => advanceSystemGuide(guide.nextScreenId));
+      if (backBtn) backBtn.addEventListener("click", goBackSystemGuide);
+    }
+
+    function clearSystemGuide() {
+      if (walkthroughGuideLayerEl) walkthroughGuideLayerEl.innerHTML = "";
+    }
+
+    function renderSystemWalkthrough(walkthrough) {
+      runtimeSystemWalkthrough = normalizeSystemWalkthrough(walkthrough);
+      systemWalkthroughEvents.length = 0;
+
+      if (!runtimeSystemWalkthrough) {
+        activeSystemScreenId = "";
+        selectedSystemHotspotId = "";
+        walkthroughScreenTitleEl.textContent = "System walkthrough";
+        walkthroughImageEl.style.display = "none";
+        walkthroughImageEl.removeAttribute("src");
+        walkthroughPlaceholderEl.style.display = "grid";
+        walkthroughPlaceholderEl.textContent = "System walkthrough will appear here.";
+        walkthroughHotspotLayerEl.innerHTML = "";
+        clearSystemGuide();
+        clearSystemFactSelection();
+        return;
+      }
+
+      setActiveSystemScreen(runtimeSystemWalkthrough.screens[0].id);
+    }
+
+    function setActiveSystemScreen(screenId, options = {}) {
+      if (!runtimeSystemWalkthrough) return;
+      const screen =
+        runtimeSystemWalkthrough.screens.find((item) => item.id === screenId) ||
+        runtimeSystemWalkthrough.screens[0];
+      if (!screen) return;
+
+      activeSystemScreenId = screen.id;
+      clearSelectedSystemHotspot();
+      if (!options.preserveFact) clearSystemFactSelection();
+      walkthroughScreenTitleEl.textContent = screen.title || "System walkthrough";
+      const imageSrc = resolveWalkthroughAssetSrc(screen.image);
+      if (imageSrc) {
+        walkthroughImageEl.src = imageSrc;
+        walkthroughImageEl.alt = screen.image.alt || screen.title || "System screenshot";
+        walkthroughImageEl.style.display = "block";
+        walkthroughPlaceholderEl.style.display = "none";
+      } else {
+        walkthroughImageEl.style.display = "none";
+        walkthroughImageEl.removeAttribute("src");
+        walkthroughPlaceholderEl.style.display = "grid";
+        walkthroughPlaceholderEl.textContent = screen.image.assetKey
+          ? `Screenshot asset: ${screen.image.assetKey}`
+          : "System screenshot unavailable.";
+      }
+
+      walkthroughHotspotLayerEl.innerHTML = "";
+      screen.hotspots.forEach((hotspot) => {
+        const button = document.createElement("button");
+        const hotspotType = getSystemHotspotType(hotspot);
+        button.type = "button";
+        button.className = `system-hotspot system-hotspot-${getSystemHotspotType(hotspot)}`;
+        button.setAttribute("aria-label", `${hotspot.label} (${getSystemHotspotActionLabel(hotspotType)})`);
+        button.setAttribute("data-hotspot-id", hotspot.id);
+        button.setAttribute("data-hotspot-type", hotspotType);
+        button.setAttribute("data-hotspot-action", hotspot.action);
+        applyHotspotPosition(button, hotspot);
+        button.addEventListener("click", () => handleSystemHotspotClick(hotspot));
+        walkthroughHotspotLayerEl.appendChild(button);
+      });
+      renderSystemGuide(screen);
+    }
+
+    function handleSystemHotspotClick(hotspot) {
+      if (!hotspot) return;
+      selectSystemHotspot(hotspot.id);
+      recordSystemWalkthroughEvent({
+        type: hotspot.action === "advance" ? "advance" : (hotspot.targetScreenId ? "navigation" : "fact"),
+        screenId: activeSystemScreenId,
+        hotspotId: hotspot.id,
+        targetScreenId: hotspot.targetScreenId || "",
+        factId: hotspot.fact?.id || ""
+      });
+
+      if (hotspot.action === "advance") {
+        advanceSystemGuide(hotspot.targetScreenId);
+        return;
+      }
+
+      if (hotspot.targetScreenId) {
+        setActiveSystemScreen(hotspot.targetScreenId, { preserveFact: Boolean(hotspot.fact) });
+        if (hotspot.fact) showSystemFact(hotspot.fact);
+        return;
+      }
+
+      if (hotspot.fact) {
+        showSystemFact(hotspot.fact);
+      }
+    }
+
+    function getSystemHotspotType(hotspot) {
+      if (hotspot?.action === "advance") return "advance";
+      return hotspot?.targetScreenId ? "navigation" : "fact";
+    }
+
+    function getSystemHotspotActionLabel(type) {
+      if (type === "advance") return "continues the guide";
+      return type === "navigation" ? "opens another screen" : "reveals account information";
+    }
+
+    function clearSelectedSystemHotspot() {
+      selectedSystemHotspotId = "";
+      if (!walkthroughHotspotLayerEl) return;
+      walkthroughHotspotLayerEl
+        .querySelectorAll(".system-hotspot-selected")
+        .forEach((el) => el.classList.remove("system-hotspot-selected"));
+    }
+
+    function selectSystemHotspot(hotspotId) {
+      selectedSystemHotspotId = String(hotspotId || "").trim();
+      if (!walkthroughHotspotLayerEl) return;
+      walkthroughHotspotLayerEl.querySelectorAll(".system-hotspot").forEach((el) => {
+        el.classList.toggle("system-hotspot-selected", el.getAttribute("data-hotspot-id") === selectedSystemHotspotId);
+      });
+    }
+
+    function clearSystemFactSelection() {
+      walkthroughFactTitleEl.textContent = "Select an area";
+      walkthroughFactBodyEl.textContent = "Use System Tools to review the supporting fact or move to another screen.";
+    }
+
+    function showSystemFact(fact) {
+      walkthroughFactTitleEl.textContent = fact.title || "Fact";
+      walkthroughFactBodyEl.textContent = fact.body || "";
+    }
+
+    function recordSystemWalkthroughEvent(event) {
+      systemWalkthroughEvents.push({
+        ...event,
+        occurredAt: new Date().toISOString()
+      });
+    }
+
 
     function renderScenarioUnavailable(message) {
       scenarioLoadFailed = true;
       scenarioDisplayConfig = null;
       transcript = [];
-      rightPaneTitle.textContent = "Scenario unavailable";
+      rightPaneTitle.textContent = "Coach Chewy";
+      chatHeaderTitle.textContent = "Customer: Customer";
+      renderSystemWalkthrough(null);
       guidanceShell.innerHTML = `
         <div class="section">
           <h2>Scenario unavailable</h2>
@@ -2223,15 +3134,21 @@ NOTES
         console.warn("Scenario step progression config missing or invalid; falling back to built-in step config.");
       }
 
-      const guideTitle = String(config?.frontend?.chat?.guideTitle || "").trim();
-      if (guideTitle) {
-        rightPaneTitle.textContent = guideTitle;
-      }
+      rightPaneTitle.textContent = "Coach Chewy";
+      chatHeaderTitle.textContent = `Customer: ${getChatCustomerDisplayName()}`;
 
+      const coachSteps = normalizeCoachSteps(config?.frontend?.chat?.coachSteps);
       const guideSections = config?.frontend?.chat?.guideSections;
-      if (Array.isArray(guideSections) && guideSections.length) {
+      const fallbackCoachSteps = normalizeCoachStepsFromGuideSections(guideSections);
+      if (coachSteps.length) {
+        renderCoachSteps(coachSteps);
+      } else if (fallbackCoachSteps.length) {
+        renderCoachSteps(fallbackCoachSteps);
+      } else if (Array.isArray(guideSections) && guideSections.length) {
         renderGuideSections(guideSections);
       }
+
+      renderSystemWalkthrough(config?.frontend?.chat?.systemWalkthrough);
 
       const initialTurns = config?.frontend?.chat?.initialTranscript;
       if (Array.isArray(initialTurns) && initialTurns.length) {
@@ -2777,8 +3694,8 @@ NOTES
       hideLoadingState();
       feedbackShell.classList.remove("active");
       guidanceShell.style.display = "block";
-      rightPaneTitle.textContent =
-        String(scenarioDisplayConfig?.frontend?.chat?.guideTitle || "").trim() || "Coach Chewy Guidance";
+      rightPaneTitle.textContent = "Coach Chewy";
+      renderCoachProgress();
     }
 
     function showLoadingState() {
@@ -3045,6 +3962,17 @@ NOTES
       };
     }
 
+    function getSystemWalkthroughEventsForSave() {
+      return systemWalkthroughEvents.map((event) => ({
+        type: String(event.type || "").trim(),
+        screenId: String(event.screenId || "").trim(),
+        hotspotId: String(event.hotspotId || "").trim(),
+        targetScreenId: String(event.targetScreenId || "").trim(),
+        factId: String(event.factId || "").trim(),
+        occurredAt: String(event.occurredAt || "").trim()
+      }));
+    }
+
     function buildReportingPayload(evaluation, errorText = "") {
       const ident = getAgentIdentity();
       const resolvedEndedAt = endedAt || new Date().toISOString();
@@ -3080,6 +4008,7 @@ NOTES
           completed_at: resolvedEndedAt,
           created_at: resolvedEndedAt,
           transcript: transcriptToEvalText(),
+          systemWalkthroughEvents: getSystemWalkthroughEventsForSave(),
           coachSummaryText: typeof evaluation?.summary === "string" ? evaluation.summary.trim() : "",
           what_went_well: String(evaluation?.what_went_well || "").trim(),
           what_to_strengthen_next: String(evaluation?.what_to_strengthen_next || "").trim(),
@@ -3123,6 +4052,7 @@ NOTES
         startedAt: resolvedStartedAt,
         endedAt: resolvedEndedAt,
         transcript: transcriptToEvalText(),
+        systemWalkthroughEvents: getSystemWalkthroughEventsForSave(),
         coachSummaryText,
         qualityBehaviors,
         areasOfOpportunity,
@@ -3197,6 +4127,7 @@ NOTES
         transcript.push(replyTurn);
         appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta);
         currentStep = nextStep;
+        renderCoachProgress();
       } catch (error) {
         const errorTurn = {
           role: "system",
@@ -3308,6 +4239,8 @@ NOTES
 
       transcript = getConfiguredInitialTranscript();
       currentStep = 0;
+      renderCoachProgress();
+      renderSystemWalkthrough(scenarioDisplayConfig?.frontend?.chat?.systemWalkthrough);
       chatEnded = false;
       isEvaluating = false;
       sessionStarted = false;
@@ -3464,6 +4397,8 @@ NOTES
       renderIntroInstructions(STATIC_CHAT_INSTRUCTIONS);
       runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
       runtimeStepProgression = null;
+      runtimeCoachSteps = [];
+      renderSystemWalkthrough(null);
       scenarioLoadFailed = false;
 
       if (!SCENARIO_ID) {
