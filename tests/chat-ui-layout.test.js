@@ -39,17 +39,37 @@ function scriptBlock(name, nextName) {
   return chatHtml.slice(start, end);
 }
 
-test("AWR shell renders Coach Chewy, customer header, and System Tools columns with System Tools wide", () => {
-  assert.match(chatHtml, /<aside class="panel coach-panel"/);
-  assert.match(chatHtml, /<section class="panel chat-panel"/);
+test("AWR shell renders a three-pane workspace with full Coach Chewy guidance to the right of chat", () => {
   assert.match(chatHtml, /<aside class="panel system-tools-panel"/);
+  assert.match(chatHtml, /<div class="workspace-resizer"[^>]*id="workspaceResizer"/);
+  assert.doesNotMatch(chatHtml, /<aside class="right-sidebar"/);
+  assert.match(chatHtml, /<section class="panel chat-panel"/);
+  assert.match(chatHtml, /<aside class="panel coach-panel"/);
   assert.match(chatHtml, /Coach Chewy/);
   assert.match(chatHtml, /Customer: Customer/);
   assert.match(chatHtml, /chatHeaderTitle\.textContent = `Customer: \$\{getChatCustomerDisplayName\(\)\}`/);
   assert.match(chatHtml, /System Tools/);
 
   const appRule = cssRule(".app");
-  assert.match(appRule, /grid-template-columns:\s*0\.55fr\s+0\.65fr\s+1\.4fr/);
+  assert.match(appRule, /grid-template-columns:\s*minmax\(54%,\s*var\(--system-tools-width,\s*60%\)\)\s+12px\s+minmax\(260px,\s*20%\)\s+minmax\(280px,\s*1fr\)/);
+  assert.doesNotMatch(appRule, /0\.55fr\s+0\.65fr\s+1\.4fr/);
+  assert.doesNotMatch(chatHtml, /class="system-screen-title"/);
+  assert.doesNotMatch(chatHtml, /class="system-fact-area"/);
+
+  const coachRule = cssRule(".coach-panel");
+  assert.match(coachRule, /border-radius:\s*12px/);
+  assert.match(coachRule, /display:\s*grid/);
+});
+
+test("workspace divider persists session width and clamps System Tools between 54 and 66 percent", () => {
+  assert.match(chatHtml, /const WORKSPACE_WIDTH_STORAGE_KEY = "ccs_workspace_system_tools_width"/);
+  assert.match(chatHtml, /const SYSTEM_TOOLS_DEFAULT_WIDTH = 60/);
+  assert.match(chatHtml, /const SYSTEM_TOOLS_MIN_WIDTH = 54/);
+  assert.match(chatHtml, /const SYSTEM_TOOLS_MAX_WIDTH = 66/);
+  assert.match(chatHtml, /sessionStorage\.getItem\(WORKSPACE_WIDTH_STORAGE_KEY\)/);
+  assert.match(chatHtml, /sessionStorage\.setItem\(WORKSPACE_WIDTH_STORAGE_KEY,\s*String\(nextWidth\)\)/);
+  assert.match(chatHtml, /clampSystemToolsWidth/);
+  assert.match(chatHtml, /workspaceResizer\.addEventListener\("pointerdown", startWorkspaceResize\)/);
 });
 
 test("full preview mode hides Rise chrome and expands simulator to the browser viewport", () => {
@@ -74,6 +94,8 @@ test("full preview mode hides Rise chrome and expands simulator to the browser v
   assert.match(chatHtml, /const IS_FULL_PREVIEW = /);
   assert.match(chatHtml, /document\.documentElement\.classList\.add\("full-preview"\)/);
   assert.match(chatHtml, /chatAccordion\.open = true/);
+  assert.doesNotMatch(chatHtml, /const DESIGN_WIDTH|const DESIGN_HEIGHT|function fitStage/);
+  assert.doesNotMatch(chatHtml, /id="stage"|class="stage"/);
 });
 
 test("System Tools uses systemWalkthrough screens, image assetKey, hotspots, facts, and navigation", () => {
@@ -82,7 +104,7 @@ test("System Tools uses systemWalkthrough screens, image assetKey, hotspots, fac
   assert.match(chatHtml, /const systemWalkthroughEvents = \[\]/);
   assert.match(chatHtml, /walkthroughImageEl/);
   assert.match(chatHtml, /walkthroughHotspotLayerEl/);
-  assert.match(chatHtml, /walkthroughFactTitleEl/);
+  assert.match(chatHtml, /recordSystemWalkthroughEvent/);
 
   const renderBlock = scriptBlock("renderSystemWalkthrough", "setActiveSystemScreen");
   assert.match(renderBlock, /\.screens/);
@@ -212,6 +234,8 @@ test("Coach Chewy prefers coachSteps, falls back to guideSections, and renders p
   assert.match(renderBlock, /coach-step-completed/);
   assert.match(renderBlock, /coach-step-current/);
   assert.match(renderBlock, /coach-step-upcoming/);
+  assert.match(renderBlock, /runtimeCoachSteps\s*\.map/);
+  assert.doesNotMatch(renderBlock, /renderActiveCoachStep/);
 
   const sendBlock = scriptBlock("sendMessage", "getCustomerReply");
   assert.match(sendBlock, /renderCoachProgress\(\)/);
