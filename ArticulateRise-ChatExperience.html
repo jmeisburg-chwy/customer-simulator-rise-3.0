@@ -300,12 +300,16 @@ NOTES
       width: 100%;
       height: 100%;
       display: grid;
-      grid-template-columns: minmax(54%, var(--system-tools-width, 60%)) 12px minmax(260px, 20%) minmax(280px, 1fr);
+      grid-template-columns: minmax(54%, var(--system-tools-width, 60%)) 12px minmax(320px, 1fr);
       gap: 0;
       padding: 8px;
       align-items: stretch;
       overflow: hidden;
       background: var(--page-bg);
+    }
+
+    .app.report-mode {
+      grid-template-columns: minmax(54%, var(--system-tools-width, 60%)) 12px minmax(260px, 20%) minmax(280px, 1fr);
     }
 
     .workspace-resizer {
@@ -363,6 +367,10 @@ NOTES
       border-radius: 12px;
       display: grid;
       grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .app:not(.report-mode) .coach-panel {
+      display: none;
     }
 
     .system-tools-panel {
@@ -905,6 +913,72 @@ NOTES
       border: 1px solid #f2d7a6;
       border-radius: 12px;
       font-size: 14px;
+    }
+
+    .coach-tip-row {
+      align-self: flex-start;
+      max-width: 82%;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 8px;
+      margin-top: -4px;
+    }
+
+    .coach-tip-row .coach-avatar {
+      width: 30px;
+      height: 30px;
+      margin-top: 2px;
+      box-shadow: 0 0 0 2px #ffffff;
+    }
+
+    .coach-tip-card {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #344054;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .coach-tip-label {
+      margin: 0 0 4px 0;
+      color: #92400e;
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .coach-tip-title {
+      margin: 0;
+      color: #111827;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .coach-tip-body {
+      margin: 4px 0 0 0;
+      color: #475467;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .coach-tip-bullets {
+      margin: 7px 0 0 0;
+      padding-left: 18px;
+    }
+
+    .coach-tip-bullets li {
+      margin-bottom: 4px;
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .coach-tip-bullets li:last-child {
+      margin-bottom: 0;
     }
 
     .meta {
@@ -1985,6 +2059,10 @@ NOTES
 
       .app {
         padding: 6px;
+        grid-template-columns: minmax(50%, var(--system-tools-width, 56%)) 10px minmax(260px, 1fr);
+      }
+
+      .app.report-mode {
         grid-template-columns: minmax(50%, var(--system-tools-width, 56%)) 10px minmax(24%, 1fr) minmax(22%, 1fr);
       }
 
@@ -2032,6 +2110,20 @@ NOTES
 
       .message-row {
         max-width: 100%;
+      }
+
+      .coach-tip-row {
+        max-width: 100%;
+        grid-template-columns: 26px minmax(0, 1fr);
+      }
+
+      .coach-tip-row .coach-avatar {
+        width: 26px;
+        height: 26px;
+      }
+
+      .coach-tip-card {
+        padding: 8px 10px;
       }
 
       .bubble {
@@ -2453,6 +2545,7 @@ NOTES
     ];
 
     const viewportEl = document.getElementById("viewport");
+    const appEl = viewportEl ? viewportEl.querySelector(".app") : null;
     const workspaceResizer = document.getElementById("workspaceResizer");
     const messagesEl = document.getElementById("messages");
     const composerEl = document.getElementById("composer");
@@ -2501,6 +2594,7 @@ NOTES
     let runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
     let runtimeStepProgression = null;
     let runtimeCoachSteps = [];
+    let inlineCoachTipCursor = 0;
     let runtimeSystemWalkthrough = null;
     let activeSystemScreenId = "";
     let selectedSystemHotspotId = "";
@@ -2633,7 +2727,16 @@ NOTES
 
     function renderTranscript() {
       messagesEl.querySelectorAll(".message-row").forEach((el) => el.remove());
-      transcript.forEach((item) => appendMessage(item.role, item.content, item.label, item.meta, false));
+      messagesEl.querySelectorAll(".coach-tip-row").forEach((el) => el.remove());
+      inlineCoachTipCursor = 0;
+      let customerTurnIndex = 0;
+      transcript.forEach((item) => {
+        const isCustomerTurn = isCustomerRole(item.role);
+        const coachStep = isCustomerTurn
+          ? selectInlineCoachStep(item.content, customerTurnIndex++)
+          : null;
+        appendMessage(item.role, item.content, item.label, item.meta, false, coachStep);
+      });
       scrollMessagesToBottom();
     }
 
@@ -2717,48 +2820,9 @@ NOTES
 
     function renderCoachSteps(steps) {
       runtimeCoachSteps = Array.isArray(steps) ? steps : [];
+      inlineCoachTipCursor = 0;
       if (!guidanceShell) return;
-
-      if (!runtimeCoachSteps.length) {
-        guidanceShell.innerHTML = `
-          <div class="section">
-            <h2>Coach Chewy</h2>
-            <p>Guidance will appear here when the scenario loads.</p>
-          </div>
-        `;
-        return;
-      }
-
-      const progressText = currentStep >= runtimeCoachSteps.length
-        ? "Wrap-up complete"
-        : `Phase ${Math.min(currentStep, runtimeCoachSteps.length - 1) + 1} of ${runtimeCoachSteps.length}`;
-
-      guidanceShell.innerHTML = `
-        <p class="coach-progress-text">${escHtml(progressText)}</p>
-        <div class="coach-step-list">
-          ${runtimeCoachSteps.map((step, index) => {
-            const bulletsHtml = step.bullets.length
-              ? `<ul>${step.bullets.map((item) => `<li>${escHtml(item)}</li>`).join("")}</ul>`
-              : "";
-            const initialStatusClass = index < currentStep || currentStep >= runtimeCoachSteps.length
-              ? "coach-step-completed"
-              : index === Math.min(currentStep, runtimeCoachSteps.length - 1)
-                ? "coach-step-current"
-                : "coach-step-upcoming";
-            return `
-              <div class="coach-step ${initialStatusClass}" data-coach-step-index="${index}">
-                <div class="coach-step-marker" aria-hidden="true">${index < currentStep || currentStep >= runtimeCoachSteps.length ? "✓" : index + 1}</div>
-                <div>
-                  <h2 class="coach-step-title">${escHtml(step.title)}</h2>
-                  ${step.body ? `<p class="coach-step-body">${escHtml(step.body)}</p>` : ""}
-                  ${bulletsHtml}
-                </div>
-              </div>
-            `;
-          }).join("")}
-        </div>
-      `;
-      renderCoachProgress();
+      guidanceShell.innerHTML = "";
     }
 
     function renderCoachProgress() {
@@ -3348,8 +3412,8 @@ NOTES
         renderCoachSteps(coachSteps);
       } else if (fallbackCoachSteps.length) {
         renderCoachSteps(fallbackCoachSteps);
-      } else if (Array.isArray(guideSections) && guideSections.length) {
-        renderGuideSections(guideSections);
+      } else {
+        renderCoachSteps([]);
       }
 
       renderSystemWalkthrough(resolveScenarioSystemWalkthrough(config));
@@ -3368,7 +3432,7 @@ NOTES
       return data.scenario;
     }
 
-    function appendMessage(role, text, label, meta = "", shouldScroll = true) {
+    function appendMessage(role, text, label, meta = "", shouldScroll = true, coachStep = null) {
       const row = document.createElement("div");
       row.className = `message-row ${mapRoleToClass(role)}`;
 
@@ -3390,8 +3454,101 @@ NOTES
 
       row.appendChild(metaEl);
       messagesEl.appendChild(row);
+      if (isCustomerRole(role)) {
+        appendInlineCoachTip(coachStep || selectInlineCoachStep(text), false);
+      }
 
       if (shouldScroll) scrollMessagesToBottom();
+    }
+
+    function appendInlineCoachTip(step, shouldScroll = true) {
+      const resolvedStep = step || getDefaultInlineCoachStep();
+      const bullets = Array.isArray(resolvedStep.bullets) ? resolvedStep.bullets : [];
+      const row = document.createElement("div");
+      row.className = "coach-tip-row";
+      row.setAttribute("aria-label", "Coach Chewy Tip");
+
+      const avatar = document.createElement("div");
+      avatar.className = "coach-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.innerHTML = `<img src="${COACH_CHEWY_IMAGE_SRC}" alt="" />`;
+
+      const card = document.createElement("div");
+      card.className = "coach-tip-card";
+      card.innerHTML = `
+        <p class="coach-tip-label">Coach Chewy Tip</p>
+        <h3 class="coach-tip-title">${escHtml(resolvedStep.title || "Try this next")}</h3>
+        ${resolvedStep.body ? `<p class="coach-tip-body">${escHtml(resolvedStep.body)}</p>` : ""}
+        ${bullets.length ? `<ul class="coach-tip-bullets">${bullets.map((item) => `<li>${escHtml(item)}</li>`).join("")}</ul>` : ""}
+      `;
+
+      row.appendChild(avatar);
+      row.appendChild(card);
+      messagesEl.appendChild(row);
+      if (shouldScroll) scrollMessagesToBottom();
+    }
+
+    function selectInlineCoachStep(latestCustomerMessage = "", preferredIndex = currentStep) {
+      const steps = runtimeCoachSteps.length ? runtimeCoachSteps : [getDefaultInlineCoachStep()];
+      const keywordIndex = findBestCoachStepMatch(latestCustomerMessage, steps);
+      if (keywordIndex >= 0) {
+        inlineCoachTipCursor = Math.max(inlineCoachTipCursor, keywordIndex + 1);
+        return steps[keywordIndex];
+      }
+
+      if (Number.isInteger(preferredIndex) && preferredIndex >= 0 && preferredIndex < steps.length) {
+        inlineCoachTipCursor = Math.max(inlineCoachTipCursor, preferredIndex + 1);
+        return steps[preferredIndex];
+      }
+
+      const fallbackIndex = Math.min(inlineCoachTipCursor, steps.length - 1);
+      inlineCoachTipCursor = Math.min(fallbackIndex + 1, steps.length);
+      return steps[fallbackIndex] || getDefaultInlineCoachStep();
+    }
+
+    function findBestCoachStepMatch(message, steps) {
+      const messageTokens = getCoachTipTokens(message);
+      if (!messageTokens.length) return -1;
+
+      let bestIndex = -1;
+      let bestScore = 0;
+      steps.forEach((step, index) => {
+        const stepText = [
+          step.title,
+          step.body,
+          ...(Array.isArray(step.bullets) ? step.bullets : [])
+        ].join(" ");
+        const stepTokens = new Set(getCoachTipTokens(stepText));
+        const score = messageTokens.reduce((total, token) => total + (stepTokens.has(token) ? 1 : 0), 0);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      });
+
+      return bestScore > 0 ? bestIndex : -1;
+    }
+
+    function getCoachTipTokens(value) {
+      const stopWords = new Set(["about", "after", "again", "also", "and", "are", "but", "can", "for", "from", "have", "into", "just", "let", "now", "our", "out", "that", "the", "this", "use", "was", "what", "when", "why", "will", "with", "you", "your"]);
+      return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((token) => token.length > 2 && !stopWords.has(token));
+    }
+
+    function getDefaultInlineCoachStep() {
+      return {
+        id: "default-inline-coach-tip",
+        title: "Start with Ownership",
+        body: "Respond to the customer's latest concern before moving into details.",
+        bullets: [
+          "Acknowledge the issue",
+          "Use plain language",
+          "Share the next step you will take"
+        ]
+      };
     }
 
     function mapRoleToClass(role) {
@@ -3400,6 +3557,10 @@ NOTES
       if (role === "system") return "system";
       if (role === "user") return "customer";
       return "customer";
+    }
+
+    function isCustomerRole(role) {
+      return role === "assistant" || role === "user";
     }
 
     function scrollMessagesToBottom() {
@@ -3888,6 +4049,7 @@ NOTES
     }
 
     function showFeedbackMode() {
+      if (appEl) appEl.classList.add("report-mode");
       hideLoadingState();
       feedbackShell.classList.add("active");
       guidanceShell.style.display = "none";
@@ -3895,6 +4057,7 @@ NOTES
     }
 
     function showGuidanceMode() {
+      if (appEl) appEl.classList.remove("report-mode");
       hideLoadingState();
       feedbackShell.classList.remove("active");
       guidanceShell.style.display = "block";
@@ -3903,6 +4066,7 @@ NOTES
     }
 
     function showLoadingState() {
+      if (appEl) appEl.classList.add("report-mode");
       feedbackShell.classList.remove("active");
       guidanceShell.style.display = "none";
       loadingShell.classList.add("active");
@@ -4329,9 +4493,8 @@ NOTES
           meta: getChatCustomerDisplayName()
         };
         transcript.push(replyTurn);
-        appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta);
+        appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta, true, selectInlineCoachStep(replyTurn.content, nextStep));
         currentStep = nextStep;
-        renderCoachProgress();
       } catch (error) {
         const errorTurn = {
           role: "system",

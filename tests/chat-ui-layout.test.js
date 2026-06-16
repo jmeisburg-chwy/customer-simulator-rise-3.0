@@ -39,7 +39,7 @@ function scriptBlock(name, nextName) {
   return chatHtml.slice(start, end);
 }
 
-test("AWR shell renders a three-pane workspace with full Coach Chewy guidance to the right of chat", () => {
+test("AWR shell renders System Tools beside a Customer Chat sidebar without persistent Coach Chewy phases", () => {
   assert.match(chatHtml, /<aside class="panel system-tools-panel"/);
   assert.match(chatHtml, /<div class="workspace-resizer"[^>]*id="workspaceResizer"/);
   assert.doesNotMatch(chatHtml, /<aside class="right-sidebar"/);
@@ -51,7 +51,7 @@ test("AWR shell renders a three-pane workspace with full Coach Chewy guidance to
   assert.match(chatHtml, /System Tools/);
 
   const appRule = cssRule(".app");
-  assert.match(appRule, /grid-template-columns:\s*minmax\(54%,\s*var\(--system-tools-width,\s*60%\)\)\s+12px\s+minmax\(260px,\s*20%\)\s+minmax\(280px,\s*1fr\)/);
+  assert.match(appRule, /grid-template-columns:\s*minmax\(54%,\s*var\(--system-tools-width,\s*60%\)\)\s+12px\s+minmax\(320px,\s*1fr\)/);
   assert.doesNotMatch(appRule, /0\.55fr\s+0\.65fr\s+1\.4fr/);
   assert.doesNotMatch(chatHtml, /class="system-screen-title"/);
   assert.doesNotMatch(chatHtml, /class="system-fact-area"/);
@@ -225,20 +225,32 @@ test("scenario template includes Learn modal and tooltip guide examples", () => 
   assert.ok(tooltipScreen.hotspots.some((hotspot) => hotspot.action === "advance"), "tooltip example should include advance hotspot");
 });
 
-test("Coach Chewy prefers coachSteps, falls back to guideSections, and renders progression states", () => {
+test("Coach Chewy prefers coachSteps, falls back to guideSections, and renders inline tips after customer messages", () => {
   const applyBlock = scriptBlock("applyScenarioDisplayConfig", "loadScenarioDisplayConfig");
   assert.match(applyBlock, /frontend\?\.chat\?\.coachSteps/);
   assert.match(applyBlock, /frontend\?\.chat\?\.guideSections/);
 
-  const renderBlock = scriptBlock("renderCoachSteps", "renderScenarioUnavailable");
-  assert.match(renderBlock, /coach-step-completed/);
-  assert.match(renderBlock, /coach-step-current/);
-  assert.match(renderBlock, /coach-step-upcoming/);
-  assert.match(renderBlock, /runtimeCoachSteps\s*\.map/);
-  assert.doesNotMatch(renderBlock, /renderActiveCoachStep/);
+  const inlineRule = cssRule(".coach-tip-row");
+  assert.match(inlineRule, /align-self:\s*flex-start/);
+  assert.match(inlineRule, /max-width:\s*82%/);
+
+  const tipRule = cssRule(".coach-tip-card");
+  assert.match(tipRule, /background:\s*#fffbeb/);
+  assert.match(tipRule, /border:\s*1px solid #fde68a/);
+
+  const renderBlock = scriptBlock("renderCoachSteps", "renderCoachProgress");
+  assert.match(renderBlock, /runtimeCoachSteps = Array\.isArray\(steps\) \? steps : \[\]/);
+  assert.doesNotMatch(renderBlock, /coach-step-list/);
+  assert.doesNotMatch(renderBlock, /runtimeCoachSteps\s*\.map/);
+
+  const tipBlock = scriptBlock("appendInlineCoachTip", "selectInlineCoachStep");
+  assert.match(tipBlock, /Coach Chewy Tip/);
+  assert.match(tipBlock, /coach-tip-title/);
+  assert.match(tipBlock, /coach-tip-bullets/);
 
   const sendBlock = scriptBlock("sendMessage", "getCustomerReply");
-  assert.match(sendBlock, /renderCoachProgress\(\)/);
+  assert.match(sendBlock, /appendMessage\("assistant", replyTurn\.content, replyTurn\.label, replyTurn\.meta,\s*true,\s*selectInlineCoachStep/);
+  assert.doesNotMatch(sendBlock, /renderCoachProgress\(\)/);
 });
 
 test("coaching save payload persists systemWalkthroughEvents without changing chat controls", () => {
