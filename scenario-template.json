@@ -4,6 +4,8 @@
   "label": "Scenario Label",
   "title": "Chewy Customer Simulator: Scenario Title",
   "channels": ["chat", "voice"],
+  "defaultChannel": "chat",
+  "experienceMode": "apply",
   "customer": {
     "persona": {
       "name": "Customer Name",
@@ -134,6 +136,20 @@
             },
             "hotspots": []
           }
+        ],
+        "moments": [
+          {
+            "id": "learn-intro",
+            "stepId": 0,
+            "screenId": "learn-start",
+            "trigger": "ideal_step_started"
+          },
+          {
+            "id": "status-review",
+            "stepId": 1,
+            "screenId": "status-screen",
+            "trigger": "ideal_step_started"
+          }
         ]
       },
       "initialTranscript": [
@@ -148,6 +164,41 @@
     "voice": {
       "guideTopNote": "Short note shown above the voice guide.",
       "customerDisplayName": "Customer Name",
+      "learn": {
+        "defaultDemoId": "modeled-call-v1",
+        "demonstrations": [
+          {
+            "id": "modeled-call-v1",
+            "title": "Modeled Voice Interaction",
+            "audio": {
+              "assetKey": "scenario_id_slug/voice-learn/modeled-call-v1.mp3",
+              "src": "",
+              "mimeType": "audio/mpeg",
+              "durationSeconds": 120
+            },
+            "cuePoints": [
+              {
+                "timeSeconds": 0,
+                "momentId": "learn-intro"
+              },
+              {
+                "timeSeconds": 18,
+                "momentId": "status-review"
+              }
+            ],
+            "transcript": [
+              {
+                "speaker": "customer",
+                "text": "Customer opening voice line."
+              },
+              {
+                "speaker": "agent",
+                "text": "Modeled agent response."
+              }
+            ]
+          }
+        ]
+      },
       "guideSections": [
         {
           "title": "Guide section title",

@@ -9,6 +9,8 @@ const {
   buildCoachingDynamoItems,
   selectFocusBehavior,
   shouldRetryOpenAIRequest,
+  normalizeExperienceMode,
+  normalizeExperienceChannel,
   normalizeUploadedScenario,
   normalizeChatStepProgression,
   buildScenarioClientConfig,
@@ -743,6 +745,163 @@ test("scenario client config preserves scripted chat customer responses", () => 
   assert.strictEqual(config.chatConfig.stepProgression[0].customerResponse, "His name is Rocky and he's a Corgi.");
 });
 
+test("scenario client config normalizes experienceMode and supports runtime override", () => {
+  const baseScenario = {
+    id: "experience_mode_contract",
+    label: "Experience Mode Contract",
+    title: "Experience Mode Contract",
+    channels: ["chat"],
+    experienceMode: "learn",
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Hi, can you help?" }],
+        guideSections: []
+      }
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Issue Understanding", behaviors: ["Understands the issue."] }]
+    }
+  };
+
+  const scenario = normalizeUploadedScenario(baseScenario);
+
+  assert.strictEqual(normalizeExperienceMode("learn"), "learn");
+  assert.strictEqual(normalizeExperienceMode("practice"), "practice");
+  assert.strictEqual(normalizeExperienceMode("apply"), "apply");
+  assert.strictEqual(normalizeExperienceMode("unexpected"), "apply");
+  assert.strictEqual(buildScenarioClientConfig(scenario).experienceMode, "learn");
+  assert.strictEqual(buildScenarioClientConfig(scenario, { experienceMode: "practice" }).experienceMode, "practice");
+  assert.strictEqual(buildScenarioClientConfig(scenario, { experienceMode: "invalid" }).experienceMode, "apply");
+  assert.strictEqual(buildScenarioClientConfig(normalizeUploadedScenario({ ...baseScenario, experienceMode: "" })).experienceMode, "apply");
+  assert.strictEqual(buildScenarioClientConfig(normalizeUploadedScenario({ ...baseScenario, experienceMode: "coach" })).experienceMode, "apply");
+});
+
+test("scenario client config normalizes default channel and preserves Voice Learn demonstrations", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "voice_learn_demo",
+    label: "Voice Learn Demo",
+    title: "Voice Learn Demo",
+    channels: ["chat", "voice"],
+    defaultChannel: "voice",
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Can you help with my order?" }],
+        guideSections: [],
+        systemWalkthrough: {
+          screens: [
+            { id: "order", title: "Order", image: { assetKey: "order-screen" }, hotspots: [] }
+          ],
+          moments: [
+            { id: "order-start", stepId: 0, trigger: "ideal_step_started", screenId: "order", voiceCueId: "order-start" }
+          ]
+        }
+      },
+      voice: {
+        guideTopNote: "Use the voice flow.",
+        guideSections: [{ title: "Voice guide", body: "Guide body", bullets: ["Listen"], pauseAfter: false }],
+        endNote: "End note.",
+        learn: {
+          defaultDemoId: "modeled-call-v1",
+          demonstrations: [
+            {
+              id: "modeled-call-v1",
+              title: "Modeled call",
+              audio: {
+                assetKey: "assets/scenarios/voice_learn_demo/voice-learn/modeled-call-v1.mp3",
+                src: "https://cdn.example.com/modeled-call-v1.mp3",
+                mimeType: "audio/mpeg",
+                durationSeconds: 123.4
+              },
+              cuePoints: [
+                { timeSeconds: 12.5, momentId: "order-start", trigger: "ideal_step_started" },
+                { timeSeconds: "bad", momentId: "ignored" },
+                { timeSeconds: 40, momentId: "" }
+              ],
+              transcript: [
+                { speaker: "customer", startSeconds: 0, endSeconds: 4.5, text: "I'm calling about my order." },
+                { speaker: "agent", startSeconds: 4.6, endSeconds: 9.5, text: "I can help with that." },
+                { speaker: "", text: "ignored" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    coaching: {
+      qualityChecklist: [{ category: "Issue Understanding", behaviors: ["Understands the issue."] }]
+    }
+  });
+
+  assert.strictEqual(normalizeExperienceChannel("voice"), "voice");
+  assert.strictEqual(normalizeExperienceChannel("chat"), "chat");
+  assert.strictEqual(normalizeExperienceChannel("invalid"), "chat");
+
+  const config = buildScenarioClientConfig(scenario);
+  assert.strictEqual(config.defaultChannel, "voice");
+  assert.strictEqual(config.frontend.voice.systemWalkthrough, undefined);
+  assert.strictEqual(config.frontend.chat.systemTools, undefined);
+  assert.deepStrictEqual(config.frontend.voice.learn, {
+    defaultDemoId: "modeled-call-v1",
+    demonstrations: [
+      {
+        id: "modeled-call-v1",
+        title: "Modeled call",
+        audio: {
+          assetKey: "assets/scenarios/voice_learn_demo/voice-learn/modeled-call-v1.mp3",
+          src: "https://cdn.example.com/modeled-call-v1.mp3",
+          mimeType: "audio/mpeg",
+          durationSeconds: 123.4
+        },
+        cuePoints: [
+          { timeSeconds: 12.5, momentId: "order-start", trigger: "ideal_step_started" }
+        ],
+        transcript: [
+          { speaker: "customer", startSeconds: 0, endSeconds: 4.5, text: "I'm calling about my order." },
+          { speaker: "agent", startSeconds: 4.6, endSeconds: 9.5, text: "I can help with that." }
+        ]
+      }
+    ]
+  });
+});
+
+test("scenario client config exposes authored Learn Mode demo agent turns", () => {
+  const scenario = normalizeUploadedScenario({
+    id: "learn_mode_demo",
+    label: "Learn Mode Demo",
+    title: "Learn Mode Demo",
+    channels: ["chat"],
+    frontend: {
+      chat: {
+        initialTranscript: [{ role: "assistant", content: "Can you help with my order?" }],
+        guideSections: []
+      }
+    },
+    coaching: {
+      behaviorRubric: [
+        {
+          behavior_name: "issue_understanding",
+          ideal_agent_example: "I can help with that order."
+        },
+        {
+          behavior_name: "expectation_setting",
+          ideal_agent_example: "Your order should arrive tomorrow."
+        },
+        {
+          behavior_name: "communication_style",
+          ideal_agent_example: ""
+        }
+      ],
+      qualityChecklist: [{ category: "Issue Understanding", behaviors: ["Understands the issue."] }]
+    }
+  });
+
+  const config = buildScenarioClientConfig(scenario);
+  assert.deepStrictEqual(config.chatConfig.learnModeScript, [
+    { stepId: 0, text: "I can help with that order." },
+    { stepId: 1, text: "Your order should arrive tomorrow." }
+  ]);
+});
+
 test("scenario client config preserves AWR chat coach steps and system walkthrough contract", () => {
   const scenario = normalizeUploadedScenario({
     id: "awr_contract_chat",
@@ -794,6 +953,13 @@ test("scenario client config preserves AWR chat coach steps and system walkthrou
               image: { assetKey: "customer-profile" },
               hotspots: []
             }
+          ],
+          moments: [
+            {
+              stepId: 0,
+              screenId: "order",
+              trigger: "ideal_step_started"
+            }
           ]
         }
       }
@@ -813,6 +979,21 @@ test("scenario client config preserves AWR chat coach steps and system walkthrou
   assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].image.assetKey, "order-details");
   assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].hotspots[0].fact.id, "refund");
   assert.strictEqual(config.frontend.chat.systemWalkthrough.screens[0].hotspots[1].targetScreenId, "customer");
+  assert.deepStrictEqual(config.frontend.chat.systemWalkthrough.moments, [
+    {
+      id: "order-step-0-1",
+      stepId: 0,
+      screenId: "order",
+      trigger: "ideal_step_started",
+      title: "",
+      description: "",
+      hotspotId: "",
+      guideId: "",
+      hint: null,
+      analyticsKey: "",
+      voiceCueId: ""
+    }
+  ]);
   assert.strictEqual(config.frontend.chat.systemTools, undefined);
 });
 

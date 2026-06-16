@@ -18,7 +18,10 @@ URL configuration:
 Host-page configuration before this script runs:
   window.CCS_CONFIG = {
     apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
-    scenarioId: "late_delivery_20_partial_refund_chat"
+    scenarioId: "late_delivery_20_partial_refund_chat",
+    experienceMode: "practice",
+    experienceModeLocked: false,
+    autoStart: false
   };
 
 Locked-package configuration:
@@ -192,7 +195,7 @@ NOTES
     }
 
     .experience-body {
-      display: none;
+      display: block;
       padding: 0 0 28px 0;
       background: transparent;
     }
@@ -201,10 +204,6 @@ NOTES
       display: block;
       height: 100%;
       padding: 0;
-    }
-
-    .experience-card details[open] .experience-body {
-      display: block;
     }
 
     .instructions-wrap {
@@ -296,6 +295,338 @@ NOTES
       border-radius: 0;
     }
 
+    .experience-mode-start {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 28px;
+      align-items: center;
+      justify-content: center;
+      background: var(--page-bg);
+    }
+
+    .experience-mode-start.active {
+      display: flex;
+    }
+
+    .experience-mode-panel {
+      width: min(980px, 100%);
+      max-height: 100%;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .experience-mode-kicker {
+      margin: 0 0 8px 0;
+      color: #1d4ed8;
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .experience-mode-heading {
+      margin: 0;
+      color: #111827;
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .experience-mode-copy {
+      margin: 10px 0 0 0;
+      max-width: 680px;
+      color: #475467;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .launch-scenario-summary {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #d8e2f0;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .launch-scenario-title {
+      margin: 0;
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .launch-scenario-description {
+      margin: 8px 0 0 0;
+      color: #475467;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .launch-coach-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .launch-coach-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #bfdbfe;
+      background: #ffffff;
+      flex: 0 0 auto;
+    }
+
+    .experience-channel-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .experience-channel-option {
+      display: flex;
+      flex-direction: column;
+      min-height: 134px;
+      padding: 18px;
+      background: #f8fafc;
+      border: 2px solid #d8e2f0;
+      border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+    }
+
+    .experience-channel-option:hover,
+    .experience-channel-option:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+    }
+
+    .experience-channel-option.selected {
+      background: #eff6ff;
+      border-color: var(--accent);
+    }
+
+    .experience-channel-option.locked,
+    .experience-channel-option.disabled {
+      cursor: default;
+    }
+
+    .experience-channel-option.disabled {
+      opacity: .48;
+    }
+
+    .experience-channel-title {
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .experience-channel-copy {
+      margin: 10px 0 0 0;
+      color: #344054;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .experience-mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .experience-mode-option {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 250px;
+      padding: 18px;
+      background: #f8fafc;
+      border: 2px solid #d8e2f0;
+      border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+    }
+
+    .experience-mode-option:hover,
+    .experience-mode-option:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+    }
+
+    .experience-mode-option.selected {
+      background: #eff6ff;
+      border-color: var(--accent);
+    }
+
+    .experience-mode-option.locked {
+      cursor: default;
+    }
+
+    .experience-mode-option-title {
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .experience-mode-option-purpose {
+      margin: 10px 0 0 0;
+      color: #344054;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .experience-mode-option-list {
+      margin: 14px 0 0 0;
+      padding-left: 18px;
+      color: #475467;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .experience-mode-option-list li {
+      margin-bottom: 6px;
+    }
+
+    .experience-mode-assignment {
+      display: none;
+      margin: 10px 0 0 0;
+      color: #667085;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .experience-mode-option.locked .experience-mode-assignment {
+      display: block;
+    }
+
+    .experience-mode-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 22px;
+    }
+
+    .experience-mode-start-btn {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 12px 18px;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .experience-mode-start-btn:hover,
+    .experience-mode-start-btn:focus-visible {
+      background: var(--accent-dark);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
+    }
+
+    .experience-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .learn-mode-controls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .app.learn-mode .learn-mode-controls {
+      display: inline-flex;
+    }
+
+    .app.learn-mode .header-link,
+    .app.learn-mode .composer {
+      display: none;
+    }
+
+    .learn-control-btn {
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      padding: 7px 9px;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .learn-control-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .learn-completion-panel {
+      display: none;
+      align-self: center;
+      width: min(520px, 100%);
+      margin: 16px auto;
+      padding: 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      background: #eff6ff;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .learn-completion-panel.active {
+      display: block;
+    }
+
+    .learn-completion-title {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .learn-completion-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
     .app {
       width: 100%;
       height: 100%;
@@ -306,6 +637,10 @@ NOTES
       align-items: stretch;
       overflow: hidden;
       background: var(--page-bg);
+    }
+
+    .viewport.awaiting-experience .app {
+      display: none;
     }
 
     .app.report-mode {
@@ -2200,15 +2535,6 @@ NOTES
 <body>
   <div class="page">
     <div class="experience-card">
-      <details id="chatAccordion">
-        <summary aria-controls="chatBody">
-          <div class="experience-copy">
-            <h2 class="experience-title">Chat Experience</h2>
-            <p class="experience-subtitle">For chat agents. Demonstrate your ability to handle customer conversations in a chat environment.</p>
-          </div>
-          <span class="experience-pill" data-open-label="Open Chat Experience" data-close-label="Hide Chat Experience">Open</span>
-        </summary>
-
         <div class="experience-body" id="chatBody">
           <div class="instructions-wrap">
             <div class="instructions-card">
@@ -2232,6 +2558,26 @@ NOTES
 
           <div class="sim-shell">
             <div class="viewport" id="viewport">
+              <div class="experience-mode-start" id="experienceModeStart" aria-hidden="true">
+                <div class="experience-mode-panel" role="region" aria-labelledby="experienceModeHeading">
+                  <p class="experience-mode-kicker">Customer Simulator</p>
+                  <h2 class="experience-mode-heading" id="experienceModeHeading">Start this scenario</h2>
+                  <div class="launch-scenario-summary" aria-label="Assigned scenario">
+                    <h3 class="launch-scenario-title" id="launchScenarioTitle">Scenario Title</h3>
+                    <p class="launch-scenario-description" id="launchScenarioDescription">Scenario Description</p>
+                  </div>
+                  <div class="launch-coach-row">
+                    <img class="launch-coach-avatar" src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="" />
+                    <p class="experience-mode-copy" id="experienceModeCopy">Which channel do you support?</p>
+                  </div>
+                  <div class="experience-channel-options" id="experienceChannelOptions" aria-label="Choose channel"></div>
+                  <div class="experience-mode-options" id="experienceModeOptions"></div>
+                  <div class="experience-mode-actions">
+                    <button class="experience-mode-start-btn" type="button" id="experienceModeStartBtn">Start Simulation</button>
+                  </div>
+                </div>
+              </div>
+
               <div class="app">
                 <aside class="panel system-tools-panel">
                   <div class="system-tools-header">
@@ -2261,6 +2607,12 @@ NOTES
                     <div class="chat-header-row">
                       <div class="chat-header-left">
                         <div class="chat-header-title" id="chatHeaderTitle">Customer: Customer</div>
+                        <span class="experience-mode-badge" id="experienceModeBadge" data-experience-channel="chat" data-experience-mode="learn">Chat · Learn Mode</span>
+                      </div>
+                      <div class="learn-mode-controls" id="learnModeControls" aria-label="Learn Mode controls">
+                        <button class="learn-control-btn" type="button" id="learnPauseBtn">Pause</button>
+                        <button class="learn-control-btn" type="button" id="learnResumeBtn" disabled>Resume</button>
+                        <button class="learn-control-btn" type="button" id="learnRestartBtn">Restart</button>
                       </div>
                       <button class="header-link" type="button" id="headerEndBtn">End</button>
                     </div>
@@ -2268,6 +2620,14 @@ NOTES
 
                   <div class="messages" id="messages">
                     <div class="chat-started" id="chatStartedText"></div>
+                    <div class="learn-completion-panel" id="learnCompletionPanel" aria-live="polite">
+                      <h3 class="learn-completion-title">You have completed the demonstration.</h3>
+                      <div class="learn-completion-actions">
+                        <button class="learn-control-btn" type="button" id="learnPracticeBtn">Practice This Scenario</button>
+                        <button class="learn-control-btn" type="button" id="learnApplyBtn">Try Apply Mode</button>
+                        <button class="learn-control-btn" type="button" id="learnCompletionRestartBtn">Restart Demonstration</button>
+                      </div>
+                    </div>
                   </div>
 
                   <div class="typing" id="typingIndicator">Customer is typing...</div>
@@ -2395,34 +2755,83 @@ NOTES
           </div>
           </div>
         </div>
-      </details>
     </div>
   </div>
 
   <script>
-    const chatAccordion = document.getElementById("chatAccordion");
     const IS_FULL_PREVIEW = ["1", "true", "full", "app"].includes(String(new URLSearchParams(window.location.search).get("preview") || "").trim().toLowerCase());
 
     if (IS_FULL_PREVIEW) {
       document.documentElement.classList.add("full-preview");
-      chatAccordion.open = true;
-    }
-
-    function syncAccordionLabel() {
-      const pill = chatAccordion.querySelector(".experience-pill");
-      if (!pill) return;
-      const openLabel = pill.getAttribute("data-open-label") || "Open";
-      const closeLabel = pill.getAttribute("data-close-label") || "Hide";
-      pill.textContent = chatAccordion.open ? closeLabel : openLabel;
     }
 
     const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
     const SCENARIO_OVERRIDE = "";
     const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
 
-    function getRuntimeConfigValue(key) {
+    function getRuntimeConfigRawValue(key) {
       const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
-      return String(config[key] || "").trim();
+      return config[key];
+    }
+
+    function getRuntimeConfigValue(key) {
+      return String(getRuntimeConfigRawValue(key) || "").trim();
+    }
+
+    function normalizeExperienceMode(value) {
+      const mode = String(value || "").trim().toLowerCase();
+      return ["learn", "practice", "apply"].includes(mode) ? mode : "apply";
+    }
+
+    function normalizeExperienceChannel(value) {
+      const channel = String(value || "").trim().toLowerCase();
+      return ["chat", "voice"].includes(channel) ? channel : "chat";
+    }
+
+    function normalizeBooleanConfig(value) {
+      if (value === true) return true;
+      if (value === false) return false;
+
+      const normalized = String(value || "").trim().toLowerCase();
+      return ["1", "true", "yes", "on"].includes(normalized);
+    }
+
+    function resolveExperienceModeOverride() {
+      const urlExperienceMode = String(new URLSearchParams(window.location.search).get("experienceMode") || "").trim();
+      if (urlExperienceMode) return normalizeExperienceMode(urlExperienceMode);
+
+      const configuredExperienceMode = getRuntimeConfigValue("experienceMode");
+      if (configuredExperienceMode) return normalizeExperienceMode(configuredExperienceMode);
+
+      return "";
+    }
+
+    function resolveChannelOverride() {
+      const urlChannel = String(new URLSearchParams(window.location.search).get("channel") || "").trim();
+      if (urlChannel) return normalizeExperienceChannel(urlChannel);
+
+      const configuredChannel = getRuntimeConfigValue("channel");
+      if (configuredChannel) return normalizeExperienceChannel(configuredChannel);
+
+      return "";
+    }
+
+    function resolveChannelLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("channelLocked")) return normalizeBooleanConfig(params.get("channelLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("channelLocked"));
+    }
+
+    function resolveExperienceModeLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("experienceModeLocked")) return normalizeBooleanConfig(params.get("experienceModeLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("experienceModeLocked"));
+    }
+
+    function resolveExperienceModeAutoStart() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("autoStart")) return normalizeBooleanConfig(params.get("autoStart"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("autoStart"));
     }
 
     function resolveApiBase() {
@@ -2451,6 +2860,11 @@ NOTES
     const SAVE_API_URL = SESSION_BASE + "/coaching";
 
     const SCENARIO_ID = resolveScenarioId();
+    const EXPERIENCE_MODE_OVERRIDE = resolveExperienceModeOverride();
+    const EXPERIENCE_CHANNEL_OVERRIDE = resolveChannelOverride();
+    const EXPERIENCE_CHANNEL_LOCKED = resolveChannelLock();
+    const EXPERIENCE_MODE_LOCKED = resolveExperienceModeLock();
+    const EXPERIENCE_MODE_AUTO_START = resolveExperienceModeAutoStart();
     const STORAGE_KEY = `ccs_coaching:${SCENARIO_ID}:chat`;
     const AGENT_NAME_STORAGE_KEY = "ccs_agentName";
     const AGENT_ID_STORAGE_KEY = "ccs_agentId";
@@ -2462,7 +2876,72 @@ NOTES
       "Use Coach Chewy for guidance.",
       "Click <strong>End</strong> to review feedback."
     ];
+    const EXPERIENCE_MODE_OPTIONS = [
+      {
+        mode: "learn",
+        title: "Learn",
+        purpose: "Observe a complete example before trying it yourself.",
+        bullets: ["Guided demonstration", "No grading", "Watch the full interaction"]
+      },
+      {
+        mode: "practice",
+        title: "Practice",
+        purpose: "Try the scenario with support and coaching.",
+        bullets: ["Hints available", "Coach Chewy guidance", "No grading"]
+      },
+      {
+        mode: "apply",
+        title: "Apply",
+        purpose: "Demonstrate your skills independently.",
+        bullets: ["Minimal guidance", "Graded experience", "Coaching report generated"]
+      }
+    ];
+    const EXPERIENCE_CHANNEL_OPTIONS = [
+      {
+        mode: "chat",
+        title: "Chat",
+        purpose: "Practice customer conversations in a written chat environment."
+      },
+      {
+        mode: "voice",
+        title: "Voice",
+        purpose: "Listen to or practice customer calls in a voice environment."
+      }
+    ];
+    const EXPERIENCE_MODE_CAPABILITIES = Object.freeze({
+      learn: Object.freeze({
+        autoPlayChat: true,
+        autoNavigateSystemTools: true,
+        showHints: false,
+        showCoachChewy: false,
+        allowLearnerResponse: false,
+        generateEvaluation: false,
+        generateCoachingReport: false,
+        showCompletionRecommendations: true
+      }),
+      practice: Object.freeze({
+        autoPlayChat: false,
+        autoNavigateSystemTools: false,
+        showHints: true,
+        showCoachChewy: true,
+        allowLearnerResponse: true,
+        generateEvaluation: false,
+        generateCoachingReport: false,
+        showCompletionRecommendations: true
+      }),
+      apply: Object.freeze({
+        autoPlayChat: false,
+        autoNavigateSystemTools: false,
+        showHints: true,
+        showCoachChewy: true,
+        allowLearnerResponse: true,
+        generateEvaluation: true,
+        generateCoachingReport: true,
+        showCompletionRecommendations: false
+      })
+    });
     const COACH_CHEWY_IMAGE_SRC = "https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png";
+    const LEARN_MODE_STEP_DELAY_MS = 1200;
     const LOCAL_PREVIEW_SYSTEM_WALKTHROUGH = {
       screens: [
         {
@@ -2557,6 +3036,23 @@ NOTES
     const loadingShell = document.getElementById("loadingShell");
     const rightPaneTitle = document.getElementById("rightPaneTitle");
     const chatHeaderTitle = document.getElementById("chatHeaderTitle");
+    const experienceModeStartEl = document.getElementById("experienceModeStart");
+    const experienceModeHeadingEl = document.getElementById("experienceModeHeading");
+    const experienceModeCopyEl = document.getElementById("experienceModeCopy");
+    const launchScenarioTitleEl = document.getElementById("launchScenarioTitle");
+    const launchScenarioDescriptionEl = document.getElementById("launchScenarioDescription");
+    const experienceChannelOptionsEl = document.getElementById("experienceChannelOptions");
+    const experienceModeOptionsEl = document.getElementById("experienceModeOptions");
+    const experienceModeStartBtn = document.getElementById("experienceModeStartBtn");
+    const experienceModeBadgeEl = document.getElementById("experienceModeBadge");
+    const learnModeControlsEl = document.getElementById("learnModeControls");
+    const learnPauseBtn = document.getElementById("learnPauseBtn");
+    const learnResumeBtn = document.getElementById("learnResumeBtn");
+    const learnRestartBtn = document.getElementById("learnRestartBtn");
+    const learnCompletionPanel = document.getElementById("learnCompletionPanel");
+    const learnPracticeBtn = document.getElementById("learnPracticeBtn");
+    const learnApplyBtn = document.getElementById("learnApplyBtn");
+    const learnCompletionRestartBtn = document.getElementById("learnCompletionRestartBtn");
     const feedbackCardsEl = document.getElementById("feedbackCards");
     const summaryCardEl = document.getElementById("summaryCard");
     const summaryTextEl = document.getElementById("summaryText");
@@ -2591,8 +3087,13 @@ NOTES
     const initialTranscript = [];
 
     let scenarioDisplayConfig = null;
+    let runtimeExperienceChannel = "chat";
+    let runtimeSupportedChannels = ["chat"];
+    let runtimeExperienceMode = "learn";
+    let hasExperienceLaunched = false;
     let runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
     let runtimeStepProgression = null;
+    let runtimeLearnModeScript = [];
     let runtimeCoachSteps = [];
     let inlineCoachTipCursor = 0;
     let runtimeSystemWalkthrough = null;
@@ -2610,6 +3111,9 @@ NOTES
     let sessionId = null;
     let startedAt = null;
     let endedAt = null;
+    let learnModeTimer = null;
+    let learnModePaused = false;
+    let learnModeCompleted = false;
 
     function safeParse(json) {
       try { return JSON.parse(json); } catch (_) { return null; }
@@ -2620,6 +3124,232 @@ NOTES
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
+    }
+
+    function getExperienceModeOption(mode) {
+      const normalizedMode = normalizeExperienceMode(mode);
+      return EXPERIENCE_MODE_OPTIONS.find((option) => option.mode === normalizedMode) || EXPERIENCE_MODE_OPTIONS[2];
+    }
+
+    function getExperienceModeLabel(mode) {
+      return `${getExperienceModeOption(mode).title} Mode`;
+    }
+
+    function getExperienceChannelOption(channel) {
+      const normalizedChannel = normalizeExperienceChannel(channel);
+      return EXPERIENCE_CHANNEL_OPTIONS.find((option) => option.mode === normalizedChannel) || EXPERIENCE_CHANNEL_OPTIONS[0];
+    }
+
+    function getExperienceChannelLabel(channel) {
+      return getExperienceChannelOption(channel).title;
+    }
+
+    function getAvailableChannelOptions() {
+      const channels = Array.isArray(runtimeSupportedChannels) && runtimeSupportedChannels.length
+        ? runtimeSupportedChannels
+        : ["chat"];
+      return EXPERIENCE_CHANNEL_OPTIONS.filter((option) => channels.includes(option.mode));
+    }
+
+    function isChannelAvailable(channel) {
+      const normalizedChannel = normalizeExperienceChannel(channel);
+      return getAvailableChannelOptions().some((option) => option.mode === normalizedChannel);
+    }
+
+    function isLearnMode() {
+      return runtimeExperienceMode === "learn";
+    }
+
+    function getExperienceModeCapabilities(mode = runtimeExperienceMode) {
+      const normalizedMode = normalizeExperienceMode(mode);
+      return EXPERIENCE_MODE_CAPABILITIES[normalizedMode] || EXPERIENCE_MODE_CAPABILITIES.apply;
+    }
+
+    function modeAllows(capability, mode = runtimeExperienceMode) {
+      const capabilities = getExperienceModeCapabilities(mode);
+      return capabilities[capability] === true;
+    }
+
+    function updateExperienceModeClass() {
+      if (!appEl) return;
+      appEl.classList.toggle("learn-mode", isLearnMode());
+    }
+
+    function renderExperienceModeBadge() {
+      if (!experienceModeBadgeEl) return;
+      experienceModeBadgeEl.textContent = `${getExperienceChannelLabel(runtimeExperienceChannel)} · ${getExperienceModeLabel(runtimeExperienceMode)}`;
+      experienceModeBadgeEl.dataset.experienceMode = runtimeExperienceMode;
+      experienceModeBadgeEl.dataset.experienceChannel = runtimeExperienceChannel;
+      updateExperienceModeClass();
+    }
+
+    function renderLaunchScenarioSummary() {
+      const title = String(scenarioDisplayConfig?.title || scenarioDisplayConfig?.label || DEFAULT_SCENARIO_LABEL).trim() || DEFAULT_SCENARIO_LABEL;
+      const description = String(
+        scenarioDisplayConfig?.description ||
+        scenarioDisplayConfig?.frontend?.shared?.launchDescription ||
+        "Review the scenario, choose your supported channel, then start in Learn, Practice, or Apply."
+      ).trim();
+      if (launchScenarioTitleEl) launchScenarioTitleEl.textContent = title;
+      if (launchScenarioDescriptionEl) launchScenarioDescriptionEl.textContent = description;
+    }
+
+    function clearLearnModeTimer() {
+      if (learnModeTimer) {
+        clearTimeout(learnModeTimer);
+        learnModeTimer = null;
+      }
+    }
+
+    function updateLearnModeControls() {
+      if (!learnModeControlsEl) return;
+      const isActive = modeAllows("autoPlayChat") && hasExperienceLaunched && !learnModeCompleted;
+      learnModeControlsEl.setAttribute("aria-hidden", String(!isActive));
+      if (learnPauseBtn) learnPauseBtn.disabled = !isActive || learnModePaused;
+      if (learnResumeBtn) learnResumeBtn.disabled = !isActive || !learnModePaused;
+      if (learnRestartBtn) learnRestartBtn.disabled = !modeAllows("autoPlayChat") || !hasExperienceLaunched;
+    }
+
+    function showLearnCompletionPanel() {
+      if (learnCompletionPanel) learnCompletionPanel.classList.add("active");
+    }
+
+    function hideLearnCompletionPanel() {
+      if (learnCompletionPanel) learnCompletionPanel.classList.remove("active");
+    }
+
+    function renderExperienceModeStart() {
+      if (!experienceModeStartEl || !experienceModeOptionsEl || !experienceChannelOptionsEl) return;
+
+      viewportEl.classList.add("awaiting-experience");
+      experienceModeStartEl.classList.add("active");
+      experienceModeStartEl.setAttribute("aria-hidden", "false");
+      renderLaunchScenarioSummary();
+      experienceChannelOptionsEl.innerHTML = "";
+      experienceModeOptionsEl.innerHTML = "";
+
+      if (experienceModeHeadingEl) {
+        experienceModeHeadingEl.textContent = EXPERIENCE_CHANNEL_LOCKED || EXPERIENCE_MODE_LOCKED
+          ? `You're starting in ${getExperienceChannelLabel(runtimeExperienceChannel)} · ${getExperienceModeLabel(runtimeExperienceMode)}`
+          : "Start this scenario";
+      }
+
+      if (experienceModeCopyEl) {
+        experienceModeCopyEl.textContent = EXPERIENCE_CHANNEL_LOCKED || EXPERIENCE_MODE_LOCKED
+          ? "This launch was assigned by your learning path. Start when you're ready."
+          : "Which channel do you support?";
+      }
+
+      const channelOptions = EXPERIENCE_CHANNEL_LOCKED ? [runtimeExperienceChannel] : getAvailableChannelOptions();
+      channelOptions.forEach((entry) => {
+        const option = typeof entry === "string" ? getExperienceChannelOption(entry) : entry;
+        const disabled = !isChannelAvailable(option.mode);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "experience-channel-option";
+        button.dataset.experienceChannel = option.mode;
+        button.setAttribute("aria-pressed", String(option.mode === runtimeExperienceChannel));
+        if (option.mode === runtimeExperienceChannel) button.classList.add("selected");
+        if (EXPERIENCE_CHANNEL_LOCKED) button.classList.add("locked");
+        if (disabled) {
+          button.classList.add("disabled");
+          button.disabled = true;
+        }
+
+        button.innerHTML = `
+          <span class="experience-channel-title">${escHtml(option.title)}</span>
+          <span class="experience-channel-copy">${escHtml(option.purpose)}</span>
+          ${EXPERIENCE_CHANNEL_LOCKED ? '<span class="experience-mode-assignment">Assigned by your learning path</span>' : ''}
+        `;
+
+        button.addEventListener("click", () => {
+          if (EXPERIENCE_CHANNEL_LOCKED || disabled) return;
+          runtimeExperienceChannel = normalizeExperienceChannel(option.mode);
+          renderExperienceModeBadge();
+          renderExperienceModeStart();
+        });
+
+        experienceChannelOptionsEl.appendChild(button);
+      });
+
+      const modeOptions = EXPERIENCE_MODE_LOCKED ? [runtimeExperienceMode] : EXPERIENCE_MODE_OPTIONS;
+      modeOptions.forEach((entry) => {
+        const option = typeof entry === "string" ? getExperienceModeOption(entry) : entry;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "experience-mode-option";
+        button.dataset.experienceMode = option.mode;
+        button.setAttribute("aria-pressed", String(option.mode === runtimeExperienceMode));
+        if (option.mode === runtimeExperienceMode) button.classList.add("selected");
+        if (EXPERIENCE_MODE_LOCKED) button.classList.add("locked");
+
+        button.innerHTML = `
+          <span class="experience-mode-option-title">${escHtml(option.title)} Mode</span>
+          <span class="experience-mode-assignment">Assigned by your learning path</span>
+          <span class="experience-mode-option-purpose">${escHtml(option.purpose)}</span>
+          <ul class="experience-mode-option-list">
+            ${option.bullets.map((bullet) => `<li>${escHtml(bullet)}</li>`).join("")}
+          </ul>
+        `;
+
+        button.addEventListener("click", () => {
+          if (EXPERIENCE_MODE_LOCKED) return;
+          runtimeExperienceMode = normalizeExperienceMode(option.mode);
+          renderExperienceModeBadge();
+          renderExperienceModeStart();
+        });
+
+        experienceModeOptionsEl.appendChild(button);
+      });
+    }
+
+    function shouldAutoStartExperience() {
+      return EXPERIENCE_CHANNEL_LOCKED && EXPERIENCE_MODE_LOCKED && EXPERIENCE_MODE_AUTO_START;
+    }
+
+    function hideExperienceModeStart() {
+      viewportEl.classList.remove("awaiting-experience");
+      if (!experienceModeStartEl) return;
+      experienceModeStartEl.classList.remove("active");
+      experienceModeStartEl.setAttribute("aria-hidden", "true");
+    }
+
+    function routeToVoiceExperience() {
+      const url = new URL("ArticulateRise-VoiceExperience.html", window.location.href);
+      url.searchParams.set("scenarioId", SCENARIO_ID);
+      url.searchParams.set("apiBase", SESSION_BASE);
+      url.searchParams.set("channel", "voice");
+      url.searchParams.set("experienceMode", runtimeExperienceMode);
+      if (EXPERIENCE_CHANNEL_LOCKED) url.searchParams.set("channelLocked", "true");
+      if (EXPERIENCE_MODE_LOCKED) url.searchParams.set("experienceModeLocked", "true");
+      if (EXPERIENCE_MODE_AUTO_START) url.searchParams.set("autoStart", "true");
+      const ident = getAgentIdentity();
+      if (ident.agentName) url.searchParams.set("agentName", ident.agentName);
+      if (ident.agentId) url.searchParams.set("agentId", ident.agentId);
+      window.location.href = url.toString();
+    }
+
+    function launchExperienceMode(mode = runtimeExperienceMode) {
+      runtimeExperienceMode = normalizeExperienceMode(mode);
+      if (runtimeExperienceChannel === "voice") {
+        routeToVoiceExperience();
+        return;
+      }
+      hasExperienceLaunched = true;
+      hideExperienceModeStart();
+      renderExperienceModeBadge();
+      hideLearnCompletionPanel();
+      renderTranscript();
+      showGuidanceMode();
+      setChatEndedState(false);
+      autoResizeTextarea();
+      hideReviewOverlay();
+      clearPersistedFeedback();
+      updateLearnModeControls();
+      if (modeAllows("autoPlayChat")) {
+        beginChatSession();
+        startLearnModeAutomation();
+      } else beginChatSession();
     }
 
     function clearPersistedFeedback() {
@@ -2732,7 +3462,7 @@ NOTES
       let customerTurnIndex = 0;
       transcript.forEach((item) => {
         const isCustomerTurn = isCustomerRole(item.role);
-        const coachStep = isCustomerTurn
+        const coachStep = isCustomerTurn && modeAllows("showHints")
           ? selectInlineCoachStep(item.content, customerTurnIndex++)
           : null;
         appendMessage(item.role, item.content, item.label, item.meta, false, coachStep);
@@ -2888,6 +3618,54 @@ NOTES
       };
     }
 
+    function normalizeSystemWalkthroughMoments(moments, screens) {
+      if (!Array.isArray(moments)) return [];
+      const screenList = Array.isArray(screens) ? screens : [];
+      const screenIds = new Set(screenList.map((screen) => screen.id));
+      const validTriggers = new Set([
+        "ideal_step_started",
+        "ideal_step_completed",
+        "learner_needs_support",
+        "customer_turn_started",
+        "customer_turn_completed",
+        "chat_step"
+      ]);
+      return moments
+        .map((moment, index) => {
+          if (!moment || typeof moment !== "object") return null;
+          const stepId = Number(moment.stepId ?? moment.step ?? moment.currentStep);
+          const screenId = String(moment.screenId || moment.targetScreenId || "").trim();
+          const trigger = String(moment.trigger || "ideal_step_started").trim() || "ideal_step_started";
+          if (!Number.isFinite(stepId) || !screenId || !screenIds.has(screenId)) return null;
+          if (!validTriggers.has(trigger)) return null;
+          const targetScreen = screenList.find((screen) => screen.id === screenId);
+          const hotspotId = String(moment.hotspotId || moment.targetHotspotId || moment.hint?.hotspotId || "").trim();
+          const hasHotspot = !hotspotId || targetScreen?.hotspots?.some((hotspot) => hotspot.id === hotspotId);
+          if (!hasHotspot) return null;
+          const hint = moment.hint && typeof moment.hint === "object"
+            ? {
+                title: String(moment.hint.title || "").trim(),
+                body: String(moment.hint.body || moment.hint.text || "").trim(),
+                hotspotId: String(moment.hint.hotspotId || hotspotId || "").trim()
+              }
+            : null;
+          return {
+            id: String(moment.id || `${screenId}-step-${stepId}-${index + 1}`).trim(),
+            stepId,
+            screenId,
+            trigger,
+            title: String(moment.title || "").trim(),
+            description: String(moment.description || "").trim(),
+            hotspotId,
+            guideId: String(moment.guideId || "").trim(),
+            hint,
+            analyticsKey: String(moment.analyticsKey || "").trim(),
+            voiceCueId: String(moment.voiceCueId || "").trim()
+          };
+        })
+        .filter(Boolean);
+    }
+
     function normalizeSystemWalkthrough(walkthrough) {
       if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
       const screens = walkthrough.screens
@@ -2939,7 +3717,12 @@ NOTES
         })
         .filter(Boolean);
 
-      return screens.length ? { screens } : null;
+      return screens.length
+        ? {
+            screens,
+            moments: normalizeSystemWalkthroughMoments(walkthrough.moments, screens)
+          }
+        : null;
     }
 
     function resolveWalkthroughAssetSrc(image) {
@@ -3221,6 +4004,158 @@ NOTES
       });
     }
 
+    function isLearnMomentTrigger(moment, trigger) {
+      const momentTrigger = String(moment?.trigger || "").trim();
+      return momentTrigger === trigger || (trigger === "ideal_step_started" && momentTrigger === "chat_step");
+    }
+
+    function activateSystemWalkthroughMoment(stepId, trigger = "ideal_step_started") {
+      const moment = runtimeSystemWalkthrough?.moments
+        ?.find((item) => item.stepId === stepId && isLearnMomentTrigger(item, trigger));
+      if (!moment) return false;
+
+      setActiveSystemScreen(moment.screenId);
+      if (moment.hotspotId) selectSystemHotspot(moment.hotspotId);
+      recordSystemWalkthroughEvent({
+        type: "moment",
+        screenId: moment.screenId,
+        hotspotId: moment.hotspotId || "",
+        targetScreenId: "",
+        factId: "",
+        momentId: moment.id || "",
+        analyticsKey: moment.analyticsKey || "",
+        trigger: moment.trigger || trigger,
+        stepId: moment.stepId
+      });
+      return true;
+    }
+
+    function getLearnModeAgentResponse(stepId) {
+      const scripted = runtimeLearnModeScript.find((item) => item.stepId === stepId);
+      if (scripted?.text) return scripted.text;
+
+      const coachStep = runtimeCoachSteps[stepId];
+      if (coachStep?.body) return coachStep.body;
+      if (Array.isArray(coachStep?.bullets) && coachStep.bullets.length) return coachStep.bullets.join(" ");
+
+      return "The agent demonstrates the recommended next step for this part of the conversation.";
+    }
+
+    function getLearnModeCustomerResponse(stepId) {
+      const step = Array.isArray(runtimeStepProgression) ? runtimeStepProgression[stepId] : null;
+      const configuredReply = String(step?.customerResponse || "").trim();
+      if (configuredReply) return configuredReply;
+      return FALLBACK_CUSTOMER_REPLIES[Math.min(stepId, FALLBACK_CUSTOMER_REPLIES.length - 1)] || "Thank you.";
+    }
+
+    function getLearnModeStepCount() {
+      const scriptedStepCount = runtimeLearnModeScript.reduce((max, step) => {
+        return Math.max(max, Number.isFinite(step?.stepId) ? step.stepId + 1 : 0);
+      }, 0);
+      const progressionStepCount = Array.isArray(runtimeStepProgression) ? runtimeStepProgression.length : 0;
+      const momentStepCount = Array.isArray(runtimeSystemWalkthrough?.moments)
+        ? runtimeSystemWalkthrough.moments.reduce((max, moment) => {
+            return Math.max(max, Number.isFinite(moment?.stepId) ? moment.stepId + 1 : 0);
+          }, 0)
+        : 0;
+      const coachStepCount = runtimeCoachSteps.length;
+      const authoredStepCount = Math.max(scriptedStepCount, progressionStepCount, momentStepCount, coachStepCount);
+      return authoredStepCount || getStepConfigLength();
+    }
+
+    function scheduleNextLearnModeStep(delayMs = LEARN_MODE_STEP_DELAY_MS) {
+      clearLearnModeTimer();
+      if (!modeAllows("autoPlayChat") || learnModePaused || learnModeCompleted || chatEnded) return;
+      learnModeTimer = setTimeout(advanceLearnModeStep, delayMs);
+    }
+
+    function startLearnModeAutomation() {
+      if (!modeAllows("autoPlayChat") || !sessionStarted || learnModeCompleted) return;
+      updateLearnModeControls();
+      scheduleNextLearnModeStep(500);
+    }
+
+    function advanceLearnModeStep() {
+      clearLearnModeTimer();
+      if (!modeAllows("autoPlayChat") || learnModePaused || learnModeCompleted || chatEnded) return;
+
+      const stepId = currentStep;
+      if (stepId >= getLearnModeStepCount()) {
+        completeLearnModeDemo();
+        return;
+      }
+
+      if (modeAllows("autoNavigateSystemTools")) {
+        activateSystemWalkthroughMoment(stepId, "ideal_step_started");
+      }
+
+      const agentText = getLearnModeAgentResponse(stepId);
+      const agentTurn = { role: "agent", content: agentText, label: "Agent" };
+      transcript.push(agentTurn);
+      appendMessage("agent", agentTurn.content, agentTurn.label);
+
+      const customerText = getLearnModeCustomerResponse(stepId);
+      if (customerText) {
+        const customerTurn = {
+          role: "assistant",
+          content: customerText,
+          label: "Customer",
+          meta: getChatCustomerDisplayName()
+        };
+        transcript.push(customerTurn);
+        appendMessage("assistant", customerTurn.content, customerTurn.label, customerTurn.meta);
+      }
+
+      currentStep = stepId + 1;
+      if (currentStep >= getLearnModeStepCount()) {
+        scheduleNextLearnModeStep(LEARN_MODE_STEP_DELAY_MS);
+      } else {
+        scheduleNextLearnModeStep();
+      }
+    }
+
+    function completeLearnModeDemo() {
+      if (!isLearnMode()) return;
+      clearLearnModeTimer();
+      learnModeCompleted = true;
+      chatEnded = true;
+      endedAt = new Date().toISOString();
+      setChatEndedState(true);
+      showLearnCompletionPanel();
+      updateLearnModeControls();
+      scrollMessagesToBottom();
+    }
+
+    function pauseLearnModeDemo() {
+      if (!modeAllows("autoPlayChat") || learnModeCompleted) return;
+      learnModePaused = true;
+      clearLearnModeTimer();
+      updateLearnModeControls();
+    }
+
+    function resumeLearnModeDemo() {
+      if (!modeAllows("autoPlayChat") || learnModeCompleted) return;
+      learnModePaused = false;
+      updateLearnModeControls();
+      scheduleNextLearnModeStep(300);
+    }
+
+    function restartLearnModeDemo() {
+      if (!modeAllows("autoPlayChat")) return;
+      clearLearnModeTimer();
+      learnModePaused = false;
+      learnModeCompleted = false;
+      resetChatActivityForNewAttempt();
+    }
+
+    function switchExperienceModeAndRestart(mode) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("experienceMode", normalizeExperienceMode(mode));
+      url.searchParams.delete("experienceModeLocked");
+      url.searchParams.delete("autoStart");
+      window.location.href = url.toString();
+    }
+
 
     function renderScenarioUnavailable(message) {
       scenarioLoadFailed = true;
@@ -3363,6 +4298,7 @@ NOTES
           if (!step || typeof step !== "object") return null;
           return {
             id: Number.isFinite(step.id) ? step.id : 0,
+            customerResponse: String(step.customerResponse || "").trim(),
             match: {
               all: Array.isArray(step?.match?.all) ? step.match.all : [],
               any: Array.isArray(step?.match?.any) ? step.match.any : []
@@ -3372,6 +4308,22 @@ NOTES
         .filter(Boolean);
 
       return normalized.length && normalized.every(isValidStepRule) ? normalized : null;
+    }
+
+    function buildLearnModeScriptFromConfig(config) {
+      const steps = config?.chatConfig?.learnModeScript;
+      if (!Array.isArray(steps)) return [];
+
+      return steps
+        .map((step, index) => {
+          const text = String(step?.text || step?.content || "").trim();
+          if (!text) return null;
+          return {
+            stepId: Number.isFinite(step.stepId) ? step.stepId : index,
+            text
+          };
+        })
+        .filter(Boolean);
     }
 
     function resolveScenarioSystemWalkthrough(config) {
@@ -3389,6 +4341,11 @@ NOTES
       if (!config || typeof config !== "object") return;
 
       scenarioDisplayConfig = config;
+      runtimeSupportedChannels = Array.isArray(config.channels) && config.channels.length
+        ? config.channels.map(normalizeExperienceChannel).filter((channel, index, items) => items.indexOf(channel) === index)
+        : ["chat"];
+      runtimeExperienceChannel = normalizeExperienceChannel(EXPERIENCE_CHANNEL_OVERRIDE || config?.defaultChannel || runtimeSupportedChannels[0] || "chat");
+      runtimeExperienceMode = normalizeExperienceMode(EXPERIENCE_MODE_OVERRIDE || (EXPERIENCE_MODE_LOCKED ? config?.experienceMode : "learn"));
 
       const hotkeyMap = buildHotkeyMapFromConfig(config);
       if (hotkeyMap) {
@@ -3401,9 +4358,12 @@ NOTES
       } else {
         console.warn("Scenario step progression config missing or invalid; falling back to built-in step config.");
       }
+      runtimeLearnModeScript = buildLearnModeScriptFromConfig(config);
 
       rightPaneTitle.textContent = "Coach Chewy";
       chatHeaderTitle.textContent = `Customer: ${getChatCustomerDisplayName()}`;
+      renderLaunchScenarioSummary();
+      renderExperienceModeBadge();
 
       const coachSteps = normalizeCoachSteps(config?.frontend?.chat?.coachSteps);
       const guideSections = config?.frontend?.chat?.guideSections;
@@ -3426,7 +4386,12 @@ NOTES
     }
 
     async function loadScenarioDisplayConfig() {
-      const url = `${SCENARIO_CONFIG_URL}?scenarioId=${encodeURIComponent(SCENARIO_ID)}`;
+      const params = new URLSearchParams({ scenarioId: SCENARIO_ID });
+      if (EXPERIENCE_MODE_OVERRIDE) {
+        params.set("experienceMode", EXPERIENCE_MODE_OVERRIDE);
+      }
+      params.set("channel", runtimeExperienceChannel);
+      const url = `${SCENARIO_CONFIG_URL}?${params.toString()}`;
       const data = await fetchJSON(url, { method: "GET" }, 20000);
       if (!data || data.error || !data.scenario || typeof data.scenario !== "object") return null;
       return data.scenario;
@@ -3454,7 +4419,7 @@ NOTES
 
       row.appendChild(metaEl);
       messagesEl.appendChild(row);
-      if (isCustomerRole(role)) {
+      if (isCustomerRole(role) && modeAllows("showHints")) {
         appendInlineCoachTip(coachStep || selectInlineCoachStep(text), false);
       }
 
@@ -4278,7 +5243,8 @@ NOTES
 
       setChatEndedState(false);
       chatStartedText.textContent = formatStartedTime();
-      composerEl.focus();
+      updateLearnModeControls();
+      if (modeAllows("allowLearnerResponse")) composerEl.focus();
     }
 
     function buildQualityBehaviorsFromEvaluation(evaluation) {
@@ -4337,6 +5303,10 @@ NOTES
         hotspotId: String(event.hotspotId || "").trim(),
         targetScreenId: String(event.targetScreenId || "").trim(),
         factId: String(event.factId || "").trim(),
+        momentId: String(event.momentId || "").trim(),
+        analyticsKey: String(event.analyticsKey || "").trim(),
+        trigger: String(event.trigger || "").trim(),
+        stepId: Number.isFinite(event.stepId) ? event.stepId : null,
         occurredAt: String(event.occurredAt || "").trim()
       }));
     }
@@ -4467,6 +5437,7 @@ NOTES
     }
 
     async function sendMessage() {
+      if (!modeAllows("allowLearnerResponse")) return;
       if (!sessionStarted || chatEnded || isEvaluating || isStandardTextOpen()) return;
 
       const text = composerEl.value.trim();
@@ -4584,25 +5555,29 @@ NOTES
     }
 
     function setComposerState(isBusy) {
-      sendBtn.disabled = isBusy || !sessionStarted;
-      composerEl.disabled = isBusy || chatEnded || !sessionStarted;
-      sendBtn.classList.toggle("primary-active", !isBusy && !chatEnded && sessionStarted);
-      headerEndBtn.disabled = isBusy || !sessionStarted;
+      const canRespond = modeAllows("allowLearnerResponse");
+      sendBtn.disabled = !canRespond || isBusy || !sessionStarted;
+      composerEl.disabled = !canRespond || isBusy || chatEnded || !sessionStarted;
+      sendBtn.classList.toggle("primary-active", canRespond && !isBusy && !chatEnded && sessionStarted);
+      headerEndBtn.disabled = !canRespond || isBusy || !sessionStarted;
     }
 
     function setChatEndedState(ended) {
       chatEnded = ended;
-      composerEl.disabled = ended || isEvaluating || !sessionStarted;
-      sendBtn.disabled = ended || isEvaluating || !sessionStarted;
-      sendBtn.classList.toggle("primary-active", !(ended || isEvaluating || !sessionStarted));
-      headerEndBtn.disabled = ended || isEvaluating || !sessionStarted;
+      const canRespond = modeAllows("allowLearnerResponse");
+      composerEl.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
+      sendBtn.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
+      sendBtn.classList.toggle("primary-active", canRespond && !(ended || isEvaluating || !sessionStarted));
+      headerEndBtn.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
     }
 
     function resetChatActivityForNewAttempt() {
+      clearLearnModeTimer();
       closeEndModal();
       hideReviewOverlay();
       hideLoadingState();
       clearPersistedFeedback();
+      hideLearnCompletionPanel();
 
       transcript = getConfiguredInitialTranscript();
       currentStep = 0;
@@ -4610,6 +5585,8 @@ NOTES
       renderSystemWalkthrough(scenarioDisplayConfig?.frontend?.chat?.systemWalkthrough);
       chatEnded = false;
       isEvaluating = false;
+      learnModePaused = false;
+      learnModeCompleted = false;
       sessionStarted = false;
       sessionId = null;
       startedAt = null;
@@ -4622,6 +5599,7 @@ NOTES
       renderTranscript();
       showGuidanceMode();
       beginChatSession();
+      if (modeAllows("autoPlayChat")) startLearnModeAutomation();
       autoResizeTextarea();
     }
 
@@ -4632,6 +5610,7 @@ NOTES
     }
 
     async function completeEndChat() {
+      if (isLearnMode() && (!modeAllows("generateEvaluation") || !modeAllows("generateCoachingReport"))) return;
       if (!sessionStarted || chatEnded || isEvaluating || isStandardTextOpen()) return;
 
       closeEndModal();
@@ -4672,15 +5651,6 @@ NOTES
       }
     }
 
-    chatAccordion.addEventListener("toggle", () => {
-      syncAccordionLabel();
-      if (chatAccordion.open) {
-        setTimeout(beginChatSession, 0);
-      }
-    });
-
-    syncAccordionLabel();
-
     sendBtn.addEventListener("click", sendMessage);
     headerEndBtn.addEventListener("click", openEndModal);
     confirmEndBtn.addEventListener("click", completeEndChat);
@@ -4694,6 +5664,13 @@ NOTES
     });
 
     standardTextCloseBtn.addEventListener("click", closeStandardTextModal);
+    experienceModeStartBtn.addEventListener("click", () => launchExperienceMode(runtimeExperienceMode));
+    learnPauseBtn.addEventListener("click", pauseLearnModeDemo);
+    learnResumeBtn.addEventListener("click", resumeLearnModeDemo);
+    learnRestartBtn.addEventListener("click", restartLearnModeDemo);
+    learnCompletionRestartBtn.addEventListener("click", restartLearnModeDemo);
+    learnPracticeBtn.addEventListener("click", () => switchExperienceModeAndRestart("practice"));
+    learnApplyBtn.addEventListener("click", () => switchExperienceModeAndRestart("apply"));
 
     standardTextOverlay.addEventListener("click", (event) => {
       if (event.target === standardTextOverlay) closeStandardTextModal();
@@ -4727,8 +5704,6 @@ NOTES
     });
 
     document.addEventListener("keydown", (event) => {
-      if (!chatAccordion.open) return;
-
       if (event.key === "F8") {
         event.preventDefault();
         openStandardTextModal();
@@ -4782,9 +5757,18 @@ NOTES
 
     async function initializeChatExperience() {
       renderIntroInstructions(STATIC_CHAT_INSTRUCTIONS);
+      clearLearnModeTimer();
       runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
       runtimeStepProgression = null;
+      runtimeLearnModeScript = [];
       runtimeCoachSteps = [];
+      runtimeExperienceMode = "apply";
+      hasExperienceLaunched = false;
+      learnModePaused = false;
+      learnModeCompleted = false;
+      hideExperienceModeStart();
+      hideLearnCompletionPanel();
+      renderExperienceModeBadge();
       renderSystemWalkthrough(null);
       scenarioLoadFailed = false;
 
@@ -4816,7 +5800,11 @@ NOTES
       hideReviewOverlay();
       clearPersistedFeedback();
 
-      if (chatAccordion.open) beginChatSession();
+      if (shouldAutoStartExperience()) {
+        launchExperienceMode(runtimeExperienceMode);
+      } else {
+        renderExperienceModeStart();
+      }
     }
 
     restoreSystemToolsWidth();
