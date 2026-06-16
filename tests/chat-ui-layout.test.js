@@ -124,6 +124,34 @@ test("System Tools uses systemWalkthrough screens, image assetKey, hotspots, fac
   assert.match(clickBlock, /recordSystemWalkthroughEvent/);
 });
 
+test("System Tools normalizes auto mode moments without creating a new contract", () => {
+  assert.match(chatHtml, /function normalizeSystemWalkthroughMode\(value\)/);
+  assert.match(chatHtml, /function normalizeSystemWalkthroughMoments\(moments, screens\)/);
+  assert.match(chatHtml, /mode:\s*normalizeSystemWalkthroughMode\(walkthrough\.mode\)/);
+  assert.match(chatHtml, /moments:\s*normalizeSystemWalkthroughMoments\(walkthrough\.moments, screens\)/);
+  assert.match(chatHtml, /trigger:\s*normalizeSystemWalkthroughTrigger\(moment\.trigger\)/);
+  assert.doesNotMatch(chatHtml, /frontend\?\.chat\?\.systemTools|frontend\.chat\.systemTools|systemTools:/);
+});
+
+test("System Tools auto mode advances only after a passed chat step", () => {
+  assert.match(chatHtml, /function isAutoSystemWalkthrough\(\)/);
+  assert.match(chatHtml, /function getAutoSystemScreenIdForStep\(stepId, trigger = "chat_step_passed"\)/);
+  assert.match(chatHtml, /function advanceSystemWalkthroughForChatStep\(stepId, options = \{\}\)/);
+
+  const advanceBlock = scriptBlock("advanceSystemWalkthroughForChatStep", "renderSystemWalkthrough");
+  assert.match(advanceBlock, /isAutoSystemWalkthrough\(\)/);
+  assert.match(advanceBlock, /getAutoSystemScreenIdForStep\(stepId/);
+  assert.match(advanceBlock, /setActiveSystemScreen\(screenId/);
+  assert.match(advanceBlock, /type:\s*"auto_screen"/);
+
+  const sendBlock = scriptBlock("sendMessage", "getCustomerReply");
+  assert.match(
+    sendBlock,
+    /if \(stepPassed\) \{\s*advanceSystemWalkthroughForChatStep\(nextStep\);\s*\}\s*currentStep = nextStep;/
+  );
+  assert.doesNotMatch(sendBlock, /advanceSystemWalkthroughForChatStep\(responseStep/);
+});
+
 test("System Tools keeps learner hotspots invisible while preserving click targets", () => {
   assert.doesNotMatch(chatHtml, /clicking highlighted areas before responding/);
   assert.doesNotMatch(chatHtml, /\.system-tools-instruction/);
@@ -211,16 +239,24 @@ test("Learn guide navigation supports Next, Back, hotspot advance, and step coun
   assert.match(guideBlock, /addEventListener\("click", goBackSystemGuide/);
 });
 
-test("scenario template includes Learn modal and tooltip guide examples", () => {
+test("scenario template includes Auto and Guided System Tools examples", () => {
   const walkthrough = scenarioTemplate.frontend.chat.systemWalkthrough;
   assert.ok(walkthrough, "scenario-template should include frontend.chat.systemWalkthrough");
+  assert.strictEqual(walkthrough.mode, "auto", "scenario-template should show auto mode as the near-term default");
   assert.ok(Array.isArray(walkthrough.screens), "systemWalkthrough.screens should be an array");
+  assert.ok(Array.isArray(walkthrough.moments), "systemWalkthrough.moments should be an array");
+  assert.ok(walkthrough.moments.some((moment) => moment.trigger === "chat_step_passed"), "auto example should include chat_step_passed moments");
 
-  const guides = walkthrough.screens.map((screen) => screen.guide).filter(Boolean);
-  assert.ok(guides.some((guide) => guide.type === "modal"), "template should include a modal guide example");
-  assert.ok(guides.some((guide) => guide.type === "tooltip"), "template should include a tooltip guide example");
+  const guidedExample = scenarioTemplate.frontend.chat.guidedSystemWalkthroughExample;
+  assert.ok(guidedExample, "scenario-template should preserve a guided walkthrough example");
+  assert.strictEqual(guidedExample.mode, "guided");
+  assert.ok(Array.isArray(guidedExample.screens), "guided example screens should be an array");
+  const guides = guidedExample.screens.map((screen) => screen.guide).filter(Boolean);
+  assert.ok(guides.some((guide) => guide.type === "modal"), "guided example should include a modal guide");
+  assert.ok(guides.some((guide) => guide.type === "tooltip"), "guided example should include a tooltip guide");
 
-  const tooltipScreen = walkthrough.screens.find((screen) => screen.guide?.type === "tooltip");
+  const tooltipScreen = guidedExample.screens.find((screen) => screen.guide?.type === "tooltip");
+  assert.ok(tooltipScreen, "guided example should include a tooltip screen");
   assert.ok(tooltipScreen.guide.spotlightHotspotId, "tooltip example should name spotlightHotspotId");
   assert.ok(tooltipScreen.hotspots.some((hotspot) => hotspot.action === "advance"), "tooltip example should include advance hotspot");
 });
