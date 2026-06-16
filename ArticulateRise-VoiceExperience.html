@@ -2346,6 +2346,23 @@ NOTES
       }
     }
 
+    function ensureActiveScenarioOption(config = {}) {
+      if (!scenarioSel || !ACTIVE_SCENARIO_ID) return;
+      const opts = Array.from(scenarioSel.options || []);
+      if (opts.some(o => o.value === ACTIVE_SCENARIO_ID)) {
+        scenarioSel.value = ACTIVE_SCENARIO_ID;
+        return;
+      }
+
+      const opt = document.createElement("option");
+      opt.value = ACTIVE_SCENARIO_ID;
+      opt.textContent =
+        String(config.label || config.title || config?.metadata?.label || config?.metadata?.title || ACTIVE_SCENARIO_ID).trim() ||
+        ACTIVE_SCENARIO_ID;
+      scenarioSel.appendChild(opt);
+      scenarioSel.value = ACTIVE_SCENARIO_ID;
+    }
+
     function selectScenarioOrFail() {
       const opts = Array.from(scenarioSel.options || []);
       if (!opts.length) return false;
@@ -2368,22 +2385,10 @@ NOTES
         return;
       }
 
-      const data = await fetchJSON(SCENARIOS_URL, { method: "GET" }, 15000);
-
-      if (!(data && Array.isArray(data.scenarios) && data.scenarios.length)) {
-        renderScenarioUnavailable(`Scenario unavailable: ${ACTIVE_SCENARIO_ID} could not be confirmed from Lambda. Check the /scenarios endpoint and deployed Lambda scenario data.`);
-        return;
-      }
-
-      populateScenarios(data.scenarios);
-
-      if (!selectScenarioOrFail()) {
-        renderScenarioUnavailable(`Scenario unavailable: ${ACTIVE_SCENARIO_ID} is not listed by Lambda. Check the selected scenario id.`);
-        return;
-      }
-
+      let config;
+      // Locked scenario packages load directly from /scenario so newly uploaded S3 scenarios do not need to appear in /scenarios first.
       try {
-        const config = await loadScenarioDisplayConfig();
+        config = await loadScenarioDisplayConfig();
         if (!config || !applyScenarioDisplayConfig(config)) {
           throw new Error("Scenario config missing voice display content.");
         }
@@ -2393,6 +2398,13 @@ NOTES
         renderScenarioUnavailable(message);
         return;
       }
+
+      const data = await fetchJSON(SCENARIOS_URL, { method: "GET" }, 15000);
+      if (data && Array.isArray(data.scenarios) && data.scenarios.length) {
+        populateScenarios(data.scenarios);
+      }
+      ensureActiveScenarioOption(config);
+      selectScenarioOrFail();
 
       setStatus("Ready");
       hintEl.textContent = "";
