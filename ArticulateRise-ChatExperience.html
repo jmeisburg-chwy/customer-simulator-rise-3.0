@@ -18,7 +18,10 @@ URL configuration:
 Host-page configuration before this script runs:
   window.CCS_CONFIG = {
     apiBase: "https://test-api-id.execute-api.us-east-2.amazonaws.com",
-    scenarioId: "late_delivery_20_partial_refund_chat"
+    scenarioId: "late_delivery_20_partial_refund_chat",
+    experienceMode: "practice",
+    experienceModeLocked: false,
+    autoStart: false
   };
 
 Locked-package configuration:
@@ -53,8 +56,7 @@ NOTES
       --danger: #dc2626;
       --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
       --radius-panel: 20px;
-      --design-width: 1280;
-      --design-height: 720;
+      --system-tools-width: 60%;
 
       --accordion-bg: #f3f4f6;
       --accordion-border: #e5e7eb;
@@ -193,7 +195,7 @@ NOTES
     }
 
     .experience-body {
-      display: none;
+      display: block;
       padding: 0 0 28px 0;
       background: transparent;
     }
@@ -202,10 +204,6 @@ NOTES
       display: block;
       height: 100%;
       padding: 0;
-    }
-
-    .experience-card details[open] .experience-body {
-      display: block;
     }
 
     .instructions-wrap {
@@ -297,24 +295,381 @@ NOTES
       border-radius: 0;
     }
 
-    .stage {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: calc(var(--design-width) * 1px);
-      height: calc(var(--design-height) * 1px);
-      transform-origin: top left;
+    .experience-mode-start {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 28px;
+      align-items: center;
+      justify-content: center;
+      background: var(--page-bg);
+    }
+
+    .experience-mode-start.active {
+      display: flex;
+    }
+
+    .experience-mode-panel {
+      width: min(980px, 100%);
+      max-height: 100%;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .experience-mode-kicker {
+      margin: 0 0 8px 0;
+      color: #1d4ed8;
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .experience-mode-heading {
+      margin: 0;
+      color: #111827;
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .experience-mode-copy {
+      margin: 10px 0 0 0;
+      max-width: 680px;
+      color: #475467;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .launch-scenario-summary {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #d8e2f0;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .launch-scenario-title {
+      margin: 0;
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .launch-scenario-description {
+      margin: 8px 0 0 0;
+      color: #475467;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .launch-coach-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .launch-coach-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #bfdbfe;
+      background: #ffffff;
+      flex: 0 0 auto;
+    }
+
+    .experience-channel-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .experience-channel-option {
+      display: flex;
+      flex-direction: column;
+      min-height: 134px;
+      padding: 18px;
+      background: #f8fafc;
+      border: 2px solid #d8e2f0;
+      border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+    }
+
+    .experience-channel-option:hover,
+    .experience-channel-option:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+    }
+
+    .experience-channel-option.selected {
+      background: #eff6ff;
+      border-color: var(--accent);
+    }
+
+    .experience-channel-option.locked,
+    .experience-channel-option.disabled {
+      cursor: default;
+    }
+
+    .experience-channel-option.disabled {
+      opacity: .48;
+    }
+
+    .experience-channel-title {
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .experience-channel-copy {
+      margin: 10px 0 0 0;
+      color: #344054;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .experience-mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .experience-mode-option {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 250px;
+      padding: 18px;
+      background: #f8fafc;
+      border: 2px solid #d8e2f0;
+      border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+    }
+
+    .experience-mode-option:hover,
+    .experience-mode-option:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+    }
+
+    .experience-mode-option.selected {
+      background: #eff6ff;
+      border-color: var(--accent);
+    }
+
+    .experience-mode-option.locked {
+      cursor: default;
+    }
+
+    .experience-mode-option-title {
+      color: #111827;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .experience-mode-option-purpose {
+      margin: 10px 0 0 0;
+      color: #344054;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .experience-mode-option-list {
+      margin: 14px 0 0 0;
+      padding-left: 18px;
+      color: #475467;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .experience-mode-option-list li {
+      margin-bottom: 6px;
+    }
+
+    .experience-mode-assignment {
+      display: none;
+      margin: 10px 0 0 0;
+      color: #667085;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .experience-mode-option.locked .experience-mode-assignment {
+      display: block;
+    }
+
+    .experience-mode-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 22px;
+    }
+
+    .experience-mode-start-btn {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 12px 18px;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .experience-mode-start-btn:hover,
+    .experience-mode-start-btn:focus-visible {
+      background: var(--accent-dark);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
+    }
+
+    .experience-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .learn-mode-controls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .app.learn-mode .learn-mode-controls {
+      display: inline-flex;
+    }
+
+    .app.learn-mode .header-link,
+    .app.learn-mode .composer {
+      display: none;
+    }
+
+    .learn-control-btn {
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      padding: 7px 9px;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .learn-control-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .learn-completion-panel {
+      display: none;
+      align-self: center;
+      width: min(520px, 100%);
+      margin: 16px auto;
+      padding: 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      background: #eff6ff;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .learn-completion-panel.active {
+      display: block;
+    }
+
+    .learn-completion-title {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .learn-completion-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
     }
 
     .app {
       width: 100%;
       height: 100%;
       display: grid;
-      grid-template-columns: 0.55fr 0.65fr 1.4fr;
-      gap: 10px;
+      grid-template-columns: minmax(54%, var(--system-tools-width, 60%)) 12px minmax(320px, 1fr);
+      gap: 0;
       padding: 8px;
       align-items: stretch;
       overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .viewport.awaiting-experience .app {
+      display: none;
+    }
+
+    .app.report-mode {
+      grid-template-columns: minmax(54%, var(--system-tools-width, 60%)) 12px minmax(260px, 20%) minmax(280px, 1fr);
+    }
+
+    .workspace-resizer {
+      min-width: 12px;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      cursor: col-resize;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .workspace-resizer::before {
+      content: "";
+      width: 4px;
+      height: 48px;
+      border-radius: 999px;
+      background: #b9c7dc;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+
+    .workspace-resizer:hover::before,
+    .workspace-resizer:focus-visible::before,
+    .workspace-resizer.resizing::before {
+      background: var(--accent);
     }
 
     .panel {
@@ -333,6 +688,7 @@ NOTES
       background: #fff;
       position: relative;
       min-height: 0;
+      border-radius: 12px;
     }
 
     .coach-panel,
@@ -342,15 +698,26 @@ NOTES
       min-height: 0;
     }
 
+    .coach-panel {
+      border-radius: 12px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .app:not(.report-mode) .coach-panel {
+      display: none;
+    }
+
     .system-tools-panel {
       background: #f8fafc;
+      border-radius: 12px;
     }
 
     .system-tools-body {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
-      gap: 10px;
-      padding: 12px;
+      grid-template-rows: minmax(0, 1fr);
+      gap: 0;
+      padding: 8px;
       min-height: 0;
       background: #f4f7fb;
     }
@@ -362,18 +729,7 @@ NOTES
       background: #ffffff;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-    }
-
-    .system-screen-title {
-      margin: 0;
-      padding: 10px 12px;
-      font-size: 16px;
-      line-height: 1.25;
-      font-weight: 800;
-      color: #111827;
-      border-bottom: 1px solid #e7edf6;
-      background: #ffffff;
+      grid-template-rows: minmax(0, 1fr);
     }
 
     .system-screenshot-wrap {
@@ -388,6 +744,7 @@ NOTES
       height: 100%;
       display: block;
       object-fit: contain;
+      object-position: center center;
       background: #ffffff;
     }
 
@@ -578,49 +935,13 @@ NOTES
       font-weight: 800;
     }
 
-    .system-fact-area {
-      min-height: 112px;
-      border: 1px solid #d8e2f0;
-      border-radius: 10px;
-      background: #ffffff;
-      padding: 12px;
-      display: grid;
-      gap: 6px;
-      align-content: start;
-    }
-
-    .system-fact-kicker {
-      margin: 0;
-      color: #1d4ed8;
-      font-size: 11px;
-      line-height: 1.2;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      font-weight: 900;
-    }
-
-    .system-fact-title {
-      margin: 0;
-      color: #111827;
-      font-size: 17px;
-      line-height: 1.25;
-      font-weight: 800;
-    }
-
-    .system-fact-body {
-      margin: 0;
-      color: #344054;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
     .guide-header,
     .chat-header,
     .system-tools-header {
-      padding: 14px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      min-height: 76px;
+      min-height: 58px;
       display: flex;
       align-items: center;
       flex-shrink: 0;
@@ -647,8 +968,8 @@ NOTES
     }
 
     .coach-avatar {
-      width: 48px;
-      height: 48px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       overflow: hidden;
       background: #dbeafe;
@@ -672,7 +993,7 @@ NOTES
     .guide-title,
     .chat-header-title,
     .system-tools-title {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
       line-height: 1.2;
       color: #111827;
@@ -683,7 +1004,7 @@ NOTES
       border: none;
       padding: 0;
       color: var(--accent);
-      font-size: 20px;
+      font-size: 17px;
       font-weight: 700;
       cursor: pointer;
       flex-shrink: 0;
@@ -696,20 +1017,26 @@ NOTES
 
     .guide-scroll {
       overflow-y: auto;
-      padding: 14px;
+      overflow-x: hidden;
+      padding: 10px;
       background: #fcfdff;
       min-height: 0;
     }
 
     .coach-step {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px;
       background: #ffffff;
-      margin-bottom: 10px;
+      margin-bottom: 0;
       display: grid;
       grid-template-columns: 28px 1fr;
       gap: 10px;
+    }
+
+    .coach-step-list {
+      display: grid;
+      gap: 8px;
     }
 
     .coach-step:last-child {
@@ -755,7 +1082,7 @@ NOTES
     .coach-step-title {
       margin: 0;
       color: #111827;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.25;
       font-weight: 800;
     }
@@ -763,7 +1090,7 @@ NOTES
     .coach-step-body {
       margin: 5px 0 0 0;
       color: #475467;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.4;
     }
 
@@ -775,8 +1102,18 @@ NOTES
     .coach-step li {
       margin-bottom: 5px;
       color: #344054;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.35;
+    }
+
+    .coach-progress-text {
+      margin: 0 0 8px 0;
+      color: #475467;
+      font-size: 11px;
+      line-height: 1.25;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
     }
 
     .coach-step li:last-child {
@@ -911,6 +1248,72 @@ NOTES
       border: 1px solid #f2d7a6;
       border-radius: 12px;
       font-size: 14px;
+    }
+
+    .coach-tip-row {
+      align-self: flex-start;
+      max-width: 82%;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 8px;
+      margin-top: -4px;
+    }
+
+    .coach-tip-row .coach-avatar {
+      width: 30px;
+      height: 30px;
+      margin-top: 2px;
+      box-shadow: 0 0 0 2px #ffffff;
+    }
+
+    .coach-tip-card {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #344054;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .coach-tip-label {
+      margin: 0 0 4px 0;
+      color: #92400e;
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .coach-tip-title {
+      margin: 0;
+      color: #111827;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .coach-tip-body {
+      margin: 4px 0 0 0;
+      color: #475467;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .coach-tip-bullets {
+      margin: 7px 0 0 0;
+      padding-left: 18px;
+    }
+
+    .coach-tip-bullets li {
+      margin-bottom: 4px;
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .coach-tip-bullets li:last-child {
+      margin-bottom: 0;
     }
 
     .meta {
@@ -1988,21 +2391,150 @@ NOTES
       .viewport {
         height: 560px;
       }
+
+      .app {
+        padding: 6px;
+        grid-template-columns: minmax(50%, var(--system-tools-width, 56%)) 10px minmax(260px, 1fr);
+      }
+
+      .app.report-mode {
+        grid-template-columns: minmax(50%, var(--system-tools-width, 56%)) 10px minmax(24%, 1fr) minmax(22%, 1fr);
+      }
+
+      .workspace-resizer {
+        min-width: 10px;
+      }
+
+      .guide-header,
+      .chat-header,
+      .system-tools-header {
+        min-height: 50px;
+        padding: 8px;
+      }
+
+      .guide-header-left,
+      .chat-header-left,
+      .system-tools-header-left {
+        gap: 6px;
+      }
+
+      .guide-title,
+      .chat-header-title,
+      .system-tools-title {
+        font-size: 15px;
+      }
+
+      .chat-header-row {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .chat-header-left {
+        flex-basis: 100%;
+      }
+
+      .header-link {
+        font-size: 12px;
+        margin-left: auto;
+      }
+
+      .messages {
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .message-row {
+        max-width: 100%;
+      }
+
+      .coach-tip-row {
+        max-width: 100%;
+        grid-template-columns: 26px minmax(0, 1fr);
+      }
+
+      .coach-tip-row .coach-avatar {
+        width: 26px;
+        height: 26px;
+      }
+
+      .coach-tip-card {
+        padding: 8px 10px;
+      }
+
+      .bubble {
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+
+      .meta,
+      .typing,
+      .chat-started {
+        font-size: 11px;
+      }
+
+      .composer {
+        min-height: 0;
+        padding: 8px;
+      }
+
+      .composer-input-wrap {
+        padding: 8px;
+      }
+
+      textarea {
+        min-height: 60px;
+        font-size: 14px;
+      }
+
+      textarea::placeholder {
+        font-size: 14px;
+      }
+
+      .composer-footer-note {
+        display: none;
+      }
+
+      .coach-avatar {
+        width: 28px;
+        height: 28px;
+      }
+
+      .guide-scroll {
+        padding: 8px;
+      }
+
+      .coach-step {
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 6px;
+        padding: 8px;
+        min-width: 0;
+      }
+
+      .coach-step > div {
+        min-width: 0;
+      }
+
+      .coach-step-title {
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .coach-step ul {
+        padding-left: 12px;
+      }
+
+      .coach-step-body,
+      .coach-step li {
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="experience-card">
-      <details id="chatAccordion">
-        <summary aria-controls="chatBody">
-          <div class="experience-copy">
-            <h2 class="experience-title">Chat Experience</h2>
-            <p class="experience-subtitle">For chat agents. Demonstrate your ability to handle customer conversations in a chat environment.</p>
-          </div>
-          <span class="experience-pill" data-open-label="Open Chat Experience" data-close-label="Hide Chat Experience">Open</span>
-        </summary>
-
         <div class="experience-body" id="chatBody">
           <div class="instructions-wrap">
             <div class="instructions-card">
@@ -2026,24 +2558,172 @@ NOTES
 
           <div class="sim-shell">
             <div class="viewport" id="viewport">
-              <div class="stage" id="stage">
-                <div class="app">
-                  <aside class="panel coach-panel">
-                    <div class="guide-header">
-                      <div class="guide-header-row">
-                        <div class="guide-header-left">
-                          <div class="coach-avatar" aria-hidden="true">
-                            <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
-                          </div>
-                          <div class="guide-title" id="rightPaneTitle">Coach Chewy</div>
-                        </div>
+              <div class="experience-mode-start" id="experienceModeStart" aria-hidden="true">
+                <div class="experience-mode-panel" role="region" aria-labelledby="experienceModeHeading">
+                  <p class="experience-mode-kicker">Customer Simulator</p>
+                  <h2 class="experience-mode-heading" id="experienceModeHeading">Start this scenario</h2>
+                  <div class="launch-scenario-summary" aria-label="Assigned scenario">
+                    <h3 class="launch-scenario-title" id="launchScenarioTitle">Scenario Title</h3>
+                    <p class="launch-scenario-description" id="launchScenarioDescription">Scenario Description</p>
+                  </div>
+                  <div class="launch-coach-row">
+                    <img class="launch-coach-avatar" src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="" />
+                    <p class="experience-mode-copy" id="experienceModeCopy">Which channel do you support?</p>
+                  </div>
+                  <div class="experience-channel-options" id="experienceChannelOptions" aria-label="Choose channel"></div>
+                  <div class="experience-mode-options" id="experienceModeOptions"></div>
+                  <div class="experience-mode-actions">
+                    <button class="experience-mode-start-btn" type="button" id="experienceModeStartBtn">Start Simulation</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="app">
+                <aside class="panel system-tools-panel">
+                  <div class="system-tools-header">
+                    <div class="system-tools-header-row">
+                      <div class="system-tools-header-left">
+                        <div class="system-tools-title">System Tools</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="system-tools-body">
+                    <div class="system-screen">
+                      <div class="system-screenshot-wrap" id="walkthroughScreenWrap">
+                        <img class="system-screenshot" id="walkthroughImage" alt="" />
+                        <div class="system-screenshot-placeholder" id="walkthroughPlaceholder">System walkthrough will appear here.</div>
+                        <div class="system-hotspot-layer" id="walkthroughHotspotLayer"></div>
+                        <div class="system-guide-layer" id="walkthroughGuideLayer"></div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+
+                <div class="workspace-resizer" id="workspaceResizer" role="separator" aria-orientation="vertical" aria-label="Resize workspace panels" tabindex="0"></div>
+
+                <section class="panel chat-panel">
+                  <div class="chat-header">
+                    <div class="chat-header-row">
+                      <div class="chat-header-left">
+                        <div class="chat-header-title" id="chatHeaderTitle">Customer: Customer</div>
+                        <span class="experience-mode-badge" id="experienceModeBadge" data-experience-channel="chat" data-experience-mode="learn">Chat · Learn Mode</span>
+                      </div>
+                      <div class="learn-mode-controls" id="learnModeControls" aria-label="Learn Mode controls">
+                        <button class="learn-control-btn" type="button" id="learnPauseBtn">Pause</button>
+                        <button class="learn-control-btn" type="button" id="learnResumeBtn" disabled>Resume</button>
+                        <button class="learn-control-btn" type="button" id="learnRestartBtn">Restart</button>
+                      </div>
+                      <button class="header-link" type="button" id="headerEndBtn">End</button>
+                    </div>
+                  </div>
+
+                  <div class="messages" id="messages">
+                    <div class="chat-started" id="chatStartedText"></div>
+                    <div class="learn-completion-panel" id="learnCompletionPanel" aria-live="polite">
+                      <h3 class="learn-completion-title">You have completed the demonstration.</h3>
+                      <div class="learn-completion-actions">
+                        <button class="learn-control-btn" type="button" id="learnPracticeBtn">Practice This Scenario</button>
+                        <button class="learn-control-btn" type="button" id="learnApplyBtn">Try Apply Mode</button>
+                        <button class="learn-control-btn" type="button" id="learnCompletionRestartBtn">Restart Demonstration</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="typing" id="typingIndicator">Customer is typing...</div>
+
+                  <div class="composer">
+                    <div class="composer-shell">
+                      <div class="composer-input-wrap">
+                        <textarea id="composer" placeholder="Type a message..."></textarea>
+                      </div>
+
+                      <div class="composer-footer">
+                        <div class="composer-footer-note">Shift + Return to add a new line</div>
+                        <button class="send-btn primary-active" type="button" id="sendBtn" aria-label="Send">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3.4 20.6L21 12 3.4 3.4 3.3 10.1l12.1 1.9-12.1 1.9z"></path>
+                          </svg>
+                        </button>
                       </div>
                     </div>
 
-                    <div class="guide-scroll" id="guideScroll">
-                      <div class="guidance-shell" id="guidanceShell"></div>
+                    <div class="standard-text-toast" id="standardTextToast" aria-live="polite"></div>
+                  </div>
 
-                      <div class="loading-shell" id="loadingShell">
+                  <div class="modal-overlay" id="endModalOverlay" aria-hidden="true">
+                    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endModalTitle">
+                      <div class="modal-top">
+                        <h2 class="modal-title" id="endModalTitle">Do you want to end the chat?</h2>
+                        <button class="modal-close" type="button" id="closeModalBtn" aria-label="Close">×</button>
+                      </div>
+                      <div class="modal-body">
+                        <p class="modal-copy">You'll still be able to view your chat and get coaching feedback.</p>
+                        <div class="modal-actions">
+                          <button class="modal-primary" type="button" id="confirmEndBtn">End Chat</button>
+                          <button class="modal-secondary" type="button" id="continueChatBtn">Continue Chat</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="standard-text-overlay" id="standardTextOverlay" aria-hidden="true">
+                    <div class="standard-text-modal" role="dialog" aria-modal="true" aria-labelledby="standardTextTitle">
+                      <div class="standard-text-top">
+                        <h2 class="standard-text-title" id="standardTextTitle">Standard Text</h2>
+                        <button class="standard-text-close" type="button" id="standardTextCloseBtn" aria-label="Close">×</button>
+                      </div>
+                      <div class="standard-text-body">
+                        <label class="standard-text-label" for="standardTextInput">Search Standard Text</label>
+                        <input
+                          class="standard-text-input"
+                          id="standardTextInput"
+                          type="text"
+                          autocomplete="off"
+                          spellcheck="false"
+                          placeholder="Enter hotkey to search for standard text"
+                        />
+                        <div class="standard-text-error" id="standardTextError">Hotkey not found. Try de5, de6, or e3.</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="review-overlay" id="reviewOverlay" aria-hidden="true">
+                    <div class="review-modal" role="status" aria-live="polite">
+                      <div class="review-modal-inner">
+                        <div class="review-top">
+                          <div class="review-avatar" aria-hidden="true">
+                            <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
+                          </div>
+                          <h2 class="review-heading">Generating coaching feedback...</h2>
+                        </div>
+                        <p class="review-copy">Coach Chewy is reviewing your chat now. Please wait while your guidance panel updates with feedback.</p>
+                        <div class="review-progress" aria-hidden="true">
+                          <div class="review-dot"></div>
+                          <div class="review-dot"></div>
+                          <div class="review-dot"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <aside class="panel coach-panel">
+                  <div class="guide-header">
+                    <div class="guide-header-row">
+                      <div class="guide-header-left">
+                        <div class="coach-avatar" aria-hidden="true">
+                          <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
+                        </div>
+                        <div class="guide-title" id="rightPaneTitle">Coach Chewy</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="guide-scroll" id="guideScroll">
+                    <div class="guidance-shell" id="guidanceShell"></div>
+
+                    <div class="loading-shell" id="loadingShell">
                         <div class="loading-card">
                           <div class="loading-card-inner">
                             <div class="loading-top">
@@ -2068,161 +2748,90 @@ NOTES
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </aside>
-
-                  <section class="panel chat-panel">
-                    <div class="chat-header">
-                      <div class="chat-header-row">
-                        <div class="chat-header-left">
-                          <div class="chat-header-title" id="chatHeaderTitle">Customer: Customer</div>
-                        </div>
-                        <button class="header-link" type="button" id="headerEndBtn">End</button>
-                      </div>
-                    </div>
-
-                    <div class="messages" id="messages">
-                      <div class="chat-started" id="chatStartedText"></div>
-                    </div>
-
-                    <div class="typing" id="typingIndicator">Customer is typing...</div>
-
-                    <div class="composer">
-                      <div class="composer-shell">
-                        <div class="composer-input-wrap">
-                          <textarea id="composer" placeholder="Type a message..."></textarea>
-                        </div>
-
-                        <div class="composer-footer">
-                          <div class="composer-footer-note">Shift + Return to add a new line</div>
-                          <button class="send-btn primary-active" type="button" id="sendBtn" aria-label="Send">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M3.4 20.6L21 12 3.4 3.4 3.3 10.1l12.1 1.9-12.1 1.9z"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="standard-text-toast" id="standardTextToast" aria-live="polite"></div>
-                    </div>
-
-                    <div class="modal-overlay" id="endModalOverlay" aria-hidden="true">
-                      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endModalTitle">
-                        <div class="modal-top">
-                          <h2 class="modal-title" id="endModalTitle">Do you want to end the chat?</h2>
-                          <button class="modal-close" type="button" id="closeModalBtn" aria-label="Close">×</button>
-                        </div>
-                        <div class="modal-body">
-                          <p class="modal-copy">You'll still be able to view your chat and get coaching feedback.</p>
-                          <div class="modal-actions">
-                            <button class="modal-primary" type="button" id="confirmEndBtn">End Chat</button>
-                            <button class="modal-secondary" type="button" id="continueChatBtn">Continue Chat</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="standard-text-overlay" id="standardTextOverlay" aria-hidden="true">
-                      <div class="standard-text-modal" role="dialog" aria-modal="true" aria-labelledby="standardTextTitle">
-                        <div class="standard-text-top">
-                          <h2 class="standard-text-title" id="standardTextTitle">Standard Text</h2>
-                          <button class="standard-text-close" type="button" id="standardTextCloseBtn" aria-label="Close">×</button>
-                        </div>
-                        <div class="standard-text-body">
-                          <label class="standard-text-label" for="standardTextInput">Search Standard Text</label>
-                          <input
-                            class="standard-text-input"
-                            id="standardTextInput"
-                            type="text"
-                            autocomplete="off"
-                            spellcheck="false"
-                            placeholder="Enter hotkey to search for standard text"
-                          />
-                          <div class="standard-text-error" id="standardTextError">Hotkey not found. Try de5, de6, or e3.</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="review-overlay" id="reviewOverlay" aria-hidden="true">
-                      <div class="review-modal" role="status" aria-live="polite">
-                        <div class="review-modal-inner">
-                          <div class="review-top">
-                            <div class="review-avatar" aria-hidden="true">
-                              <img src="https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png" alt="Coach Chewy the corgi" />
-                            </div>
-                            <h2 class="review-heading">Generating coaching feedback...</h2>
-                          </div>
-                          <p class="review-copy">Coach Chewy is reviewing your chat now. Please wait while your guidance panel updates with feedback.</p>
-                          <div class="review-progress" aria-hidden="true">
-                            <div class="review-dot"></div>
-                            <div class="review-dot"></div>
-                            <div class="review-dot"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <aside class="panel system-tools-panel">
-                    <div class="system-tools-header">
-                      <div class="system-tools-header-row">
-                        <div class="system-tools-header-left">
-                          <div class="system-tools-title">System Tools</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="system-tools-body">
-                      <div class="system-screen">
-                        <h2 class="system-screen-title" id="walkthroughScreenTitle">System walkthrough</h2>
-                        <div class="system-screenshot-wrap" id="walkthroughScreenWrap">
-	                          <img class="system-screenshot" id="walkthroughImage" alt="" />
-	                          <div class="system-screenshot-placeholder" id="walkthroughPlaceholder">System walkthrough will appear here.</div>
-	                          <div class="system-hotspot-layer" id="walkthroughHotspotLayer"></div>
-	                          <div class="system-guide-layer" id="walkthroughGuideLayer"></div>
-	                        </div>
-                      </div>
-
-                      <div class="system-fact-area" aria-live="polite">
-                        <p class="system-fact-kicker">Selected Fact</p>
-                        <h2 class="system-fact-title" id="walkthroughFactTitle">Select an area</h2>
-                        <p class="system-fact-body" id="walkthroughFactBody">Use System Tools to review the supporting fact or move to another screen.</p>
-                      </div>
-                    </div>
-                  </aside>
-                </div>
+                  </div>
+                </aside>
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </details>
     </div>
   </div>
 
   <script>
-    const chatAccordion = document.getElementById("chatAccordion");
     const IS_FULL_PREVIEW = ["1", "true", "full", "app"].includes(String(new URLSearchParams(window.location.search).get("preview") || "").trim().toLowerCase());
 
     if (IS_FULL_PREVIEW) {
       document.documentElement.classList.add("full-preview");
-      chatAccordion.open = true;
-    }
-
-    function syncAccordionLabel() {
-      const pill = chatAccordion.querySelector(".experience-pill");
-      if (!pill) return;
-      const openLabel = pill.getAttribute("data-open-label") || "Open";
-      const closeLabel = pill.getAttribute("data-close-label") || "Hide";
-      pill.textContent = chatAccordion.open ? closeLabel : openLabel;
     }
 
     const DEFAULT_API_BASE = "https://1icxzv8avg.execute-api.us-east-2.amazonaws.com";
     const SCENARIO_OVERRIDE = "";
     const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
 
-    function getRuntimeConfigValue(key) {
+    function getRuntimeConfigRawValue(key) {
       const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
-      return String(config[key] || "").trim();
+      return config[key];
+    }
+
+    function getRuntimeConfigValue(key) {
+      return String(getRuntimeConfigRawValue(key) || "").trim();
+    }
+
+    function normalizeExperienceMode(value) {
+      const mode = String(value || "").trim().toLowerCase();
+      return ["learn", "practice", "apply"].includes(mode) ? mode : "apply";
+    }
+
+    function normalizeExperienceChannel(value) {
+      const channel = String(value || "").trim().toLowerCase();
+      return ["chat", "voice"].includes(channel) ? channel : "chat";
+    }
+
+    function normalizeBooleanConfig(value) {
+      if (value === true) return true;
+      if (value === false) return false;
+
+      const normalized = String(value || "").trim().toLowerCase();
+      return ["1", "true", "yes", "on"].includes(normalized);
+    }
+
+    function resolveExperienceModeOverride() {
+      const urlExperienceMode = String(new URLSearchParams(window.location.search).get("experienceMode") || "").trim();
+      if (urlExperienceMode) return normalizeExperienceMode(urlExperienceMode);
+
+      const configuredExperienceMode = getRuntimeConfigValue("experienceMode");
+      if (configuredExperienceMode) return normalizeExperienceMode(configuredExperienceMode);
+
+      return "";
+    }
+
+    function resolveChannelOverride() {
+      const urlChannel = String(new URLSearchParams(window.location.search).get("channel") || "").trim();
+      if (urlChannel) return normalizeExperienceChannel(urlChannel);
+
+      const configuredChannel = getRuntimeConfigValue("channel");
+      if (configuredChannel) return normalizeExperienceChannel(configuredChannel);
+
+      return "";
+    }
+
+    function resolveChannelLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("channelLocked")) return normalizeBooleanConfig(params.get("channelLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("channelLocked"));
+    }
+
+    function resolveExperienceModeLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("experienceModeLocked")) return normalizeBooleanConfig(params.get("experienceModeLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("experienceModeLocked"));
+    }
+
+    function resolveExperienceModeAutoStart() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("autoStart")) return normalizeBooleanConfig(params.get("autoStart"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("autoStart"));
     }
 
     function resolveApiBase() {
@@ -2251,6 +2860,11 @@ NOTES
     const SAVE_API_URL = SESSION_BASE + "/coaching";
 
     const SCENARIO_ID = resolveScenarioId();
+    const EXPERIENCE_MODE_OVERRIDE = resolveExperienceModeOverride();
+    const EXPERIENCE_CHANNEL_OVERRIDE = resolveChannelOverride();
+    const EXPERIENCE_CHANNEL_LOCKED = resolveChannelLock();
+    const EXPERIENCE_MODE_LOCKED = resolveExperienceModeLock();
+    const EXPERIENCE_MODE_AUTO_START = resolveExperienceModeAutoStart();
     const STORAGE_KEY = `ccs_coaching:${SCENARIO_ID}:chat`;
     const AGENT_NAME_STORAGE_KEY = "ccs_agentName";
     const AGENT_ID_STORAGE_KEY = "ccs_agentId";
@@ -2262,7 +2876,85 @@ NOTES
       "Use Coach Chewy for guidance.",
       "Click <strong>End</strong> to review feedback."
     ];
+    const EXPERIENCE_MODE_OPTIONS = [
+      {
+        mode: "learn",
+        title: "Learn",
+        purpose: "Observe a complete example before trying it yourself.",
+        bullets: ["Guided demonstration", "No grading", "Watch the full interaction"]
+      },
+      {
+        mode: "practice",
+        title: "Practice",
+        purpose: "Try the scenario with support and coaching.",
+        bullets: ["Hints available", "Coach Chewy guidance", "No grading"]
+      },
+      {
+        mode: "apply",
+        title: "Apply",
+        purpose: "Demonstrate your skills independently.",
+        bullets: ["Minimal guidance", "Graded experience", "Coaching report generated"]
+      }
+    ];
+    const EXPERIENCE_CHANNEL_OPTIONS = [
+      {
+        mode: "chat",
+        title: "Chat",
+        purpose: "Practice customer conversations in a written chat environment."
+      },
+      {
+        mode: "voice",
+        title: "Voice",
+        purpose: "Listen to or practice customer calls in a voice environment."
+      }
+    ];
+    const EXPERIENCE_MODE_CAPABILITIES = Object.freeze({
+      learn: Object.freeze({
+        autoPlayChat: true,
+        autoNavigateSystemTools: true,
+        showHints: false,
+        showCoachChewy: false,
+        allowLearnerResponse: false,
+        generateEvaluation: false,
+        generateCoachingReport: false,
+        showCompletionRecommendations: true
+      }),
+      practice: Object.freeze({
+        autoPlayChat: false,
+        autoNavigateSystemTools: false,
+        showHints: true,
+        showCoachChewy: true,
+        allowLearnerResponse: true,
+        generateEvaluation: false,
+        generateCoachingReport: false,
+        showCompletionRecommendations: true
+      }),
+      apply: Object.freeze({
+        autoPlayChat: false,
+        autoNavigateSystemTools: false,
+        showHints: true,
+        showCoachChewy: true,
+        allowLearnerResponse: true,
+        generateEvaluation: true,
+        generateCoachingReport: true,
+        showCompletionRecommendations: false
+      })
+    });
     const COACH_CHEWY_IMAGE_SRC = "https://pub-f427f39912f4461691149d76a2e41031.r2.dev/Coach_Chewy_Circle_large.png";
+    const LEARN_MODE_STEP_DELAY_MS = 1200;
+    const LOCAL_PREVIEW_SYSTEM_WALKTHROUGH = {
+      screens: [
+        {
+          id: "system-tools-1",
+          title: "System Tools",
+          image: {
+            src: "assets/system-tools/1.png",
+            alt: "System Tools screenshot 1"
+          },
+          hotspots: []
+        }
+      ]
+    };
     const STANDARD_TEXT_MAP = {
       de5: "I'm sorry for the delay of your order. I know how important timely deliveries are and we want to ensure you and PETNAME are taken care of. I’ve refunded $XX to your PAYMENT ending in -XXXX to help with a local purchase in the meantime, and it should appear in your account within 3-6 days.",
       de6: "I understand how important it is to receive your package on time, and I want to make sure you feel fully supported while we sort this out. I have checked the tracking details, and it looks like your package is still moving as expected and remains within the estimated delivery window. If you follow the tracking link here [INSERT TRACKING], you can track it more closely. To give you a clearer picture, orders typically ship within 48 hours, and once they do, they usually arrive within 1-3 days. If your order doesn't arrive within this expected timeframe, please reach back out to us and we'll be more than happy to provide additional support.",
@@ -2332,7 +3024,8 @@ NOTES
     ];
 
     const viewportEl = document.getElementById("viewport");
-    const stageEl = document.getElementById("stage");
+    const appEl = viewportEl ? viewportEl.querySelector(".app") : null;
+    const workspaceResizer = document.getElementById("workspaceResizer");
     const messagesEl = document.getElementById("messages");
     const composerEl = document.getElementById("composer");
     const sendBtn = document.getElementById("sendBtn");
@@ -2343,6 +3036,23 @@ NOTES
     const loadingShell = document.getElementById("loadingShell");
     const rightPaneTitle = document.getElementById("rightPaneTitle");
     const chatHeaderTitle = document.getElementById("chatHeaderTitle");
+    const experienceModeStartEl = document.getElementById("experienceModeStart");
+    const experienceModeHeadingEl = document.getElementById("experienceModeHeading");
+    const experienceModeCopyEl = document.getElementById("experienceModeCopy");
+    const launchScenarioTitleEl = document.getElementById("launchScenarioTitle");
+    const launchScenarioDescriptionEl = document.getElementById("launchScenarioDescription");
+    const experienceChannelOptionsEl = document.getElementById("experienceChannelOptions");
+    const experienceModeOptionsEl = document.getElementById("experienceModeOptions");
+    const experienceModeStartBtn = document.getElementById("experienceModeStartBtn");
+    const experienceModeBadgeEl = document.getElementById("experienceModeBadge");
+    const learnModeControlsEl = document.getElementById("learnModeControls");
+    const learnPauseBtn = document.getElementById("learnPauseBtn");
+    const learnResumeBtn = document.getElementById("learnResumeBtn");
+    const learnRestartBtn = document.getElementById("learnRestartBtn");
+    const learnCompletionPanel = document.getElementById("learnCompletionPanel");
+    const learnPracticeBtn = document.getElementById("learnPracticeBtn");
+    const learnApplyBtn = document.getElementById("learnApplyBtn");
+    const learnCompletionRestartBtn = document.getElementById("learnCompletionRestartBtn");
     const feedbackCardsEl = document.getElementById("feedbackCards");
     const summaryCardEl = document.getElementById("summaryCard");
     const summaryTextEl = document.getElementById("summaryText");
@@ -2369,15 +3079,23 @@ NOTES
     const walkthroughFactTitleEl = document.getElementById("walkthroughFactTitle");
     const walkthroughFactBodyEl = document.getElementById("walkthroughFactBody");
 
-    const DESIGN_WIDTH = 1280;
-    const DESIGN_HEIGHT = 720;
+    const WORKSPACE_WIDTH_STORAGE_KEY = "ccs_workspace_system_tools_width";
+    const SYSTEM_TOOLS_DEFAULT_WIDTH = 60;
+    const SYSTEM_TOOLS_MIN_WIDTH = 54;
+    const SYSTEM_TOOLS_MAX_WIDTH = 66;
 
     const initialTranscript = [];
 
     let scenarioDisplayConfig = null;
+    let runtimeExperienceChannel = "chat";
+    let runtimeSupportedChannels = ["chat"];
+    let runtimeExperienceMode = "learn";
+    let hasExperienceLaunched = false;
     let runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
     let runtimeStepProgression = null;
+    let runtimeLearnModeScript = [];
     let runtimeCoachSteps = [];
+    let inlineCoachTipCursor = 0;
     let runtimeSystemWalkthrough = null;
     let activeSystemScreenId = "";
     let selectedSystemHotspotId = "";
@@ -2393,6 +3111,9 @@ NOTES
     let sessionId = null;
     let startedAt = null;
     let endedAt = null;
+    let learnModeTimer = null;
+    let learnModePaused = false;
+    let learnModeCompleted = false;
 
     function safeParse(json) {
       try { return JSON.parse(json); } catch (_) { return null; }
@@ -2405,19 +3126,291 @@ NOTES
         .replaceAll(">", "&gt;");
     }
 
+    function getExperienceModeOption(mode) {
+      const normalizedMode = normalizeExperienceMode(mode);
+      return EXPERIENCE_MODE_OPTIONS.find((option) => option.mode === normalizedMode) || EXPERIENCE_MODE_OPTIONS[2];
+    }
+
+    function getExperienceModeLabel(mode) {
+      return `${getExperienceModeOption(mode).title} Mode`;
+    }
+
+    function getExperienceChannelOption(channel) {
+      const normalizedChannel = normalizeExperienceChannel(channel);
+      return EXPERIENCE_CHANNEL_OPTIONS.find((option) => option.mode === normalizedChannel) || EXPERIENCE_CHANNEL_OPTIONS[0];
+    }
+
+    function getExperienceChannelLabel(channel) {
+      return getExperienceChannelOption(channel).title;
+    }
+
+    function getAvailableChannelOptions() {
+      const channels = Array.isArray(runtimeSupportedChannels) && runtimeSupportedChannels.length
+        ? runtimeSupportedChannels
+        : ["chat"];
+      return EXPERIENCE_CHANNEL_OPTIONS.filter((option) => channels.includes(option.mode));
+    }
+
+    function isChannelAvailable(channel) {
+      const normalizedChannel = normalizeExperienceChannel(channel);
+      return getAvailableChannelOptions().some((option) => option.mode === normalizedChannel);
+    }
+
+    function isLearnMode() {
+      return runtimeExperienceMode === "learn";
+    }
+
+    function getExperienceModeCapabilities(mode = runtimeExperienceMode) {
+      const normalizedMode = normalizeExperienceMode(mode);
+      return EXPERIENCE_MODE_CAPABILITIES[normalizedMode] || EXPERIENCE_MODE_CAPABILITIES.apply;
+    }
+
+    function modeAllows(capability, mode = runtimeExperienceMode) {
+      const capabilities = getExperienceModeCapabilities(mode);
+      return capabilities[capability] === true;
+    }
+
+    function updateExperienceModeClass() {
+      if (!appEl) return;
+      appEl.classList.toggle("learn-mode", isLearnMode());
+    }
+
+    function renderExperienceModeBadge() {
+      if (!experienceModeBadgeEl) return;
+      experienceModeBadgeEl.textContent = `${getExperienceChannelLabel(runtimeExperienceChannel)} · ${getExperienceModeLabel(runtimeExperienceMode)}`;
+      experienceModeBadgeEl.dataset.experienceMode = runtimeExperienceMode;
+      experienceModeBadgeEl.dataset.experienceChannel = runtimeExperienceChannel;
+      updateExperienceModeClass();
+    }
+
+    function renderLaunchScenarioSummary() {
+      const title = String(scenarioDisplayConfig?.title || scenarioDisplayConfig?.label || DEFAULT_SCENARIO_LABEL).trim() || DEFAULT_SCENARIO_LABEL;
+      const description = String(
+        scenarioDisplayConfig?.description ||
+        scenarioDisplayConfig?.frontend?.shared?.launchDescription ||
+        "Review the scenario, choose your supported channel, then start in Learn, Practice, or Apply."
+      ).trim();
+      if (launchScenarioTitleEl) launchScenarioTitleEl.textContent = title;
+      if (launchScenarioDescriptionEl) launchScenarioDescriptionEl.textContent = description;
+    }
+
+    function clearLearnModeTimer() {
+      if (learnModeTimer) {
+        clearTimeout(learnModeTimer);
+        learnModeTimer = null;
+      }
+    }
+
+    function updateLearnModeControls() {
+      if (!learnModeControlsEl) return;
+      const isActive = modeAllows("autoPlayChat") && hasExperienceLaunched && !learnModeCompleted;
+      learnModeControlsEl.setAttribute("aria-hidden", String(!isActive));
+      if (learnPauseBtn) learnPauseBtn.disabled = !isActive || learnModePaused;
+      if (learnResumeBtn) learnResumeBtn.disabled = !isActive || !learnModePaused;
+      if (learnRestartBtn) learnRestartBtn.disabled = !modeAllows("autoPlayChat") || !hasExperienceLaunched;
+    }
+
+    function showLearnCompletionPanel() {
+      if (learnCompletionPanel) learnCompletionPanel.classList.add("active");
+    }
+
+    function hideLearnCompletionPanel() {
+      if (learnCompletionPanel) learnCompletionPanel.classList.remove("active");
+    }
+
+    function renderExperienceModeStart() {
+      if (!experienceModeStartEl || !experienceModeOptionsEl || !experienceChannelOptionsEl) return;
+
+      viewportEl.classList.add("awaiting-experience");
+      experienceModeStartEl.classList.add("active");
+      experienceModeStartEl.setAttribute("aria-hidden", "false");
+      renderLaunchScenarioSummary();
+      experienceChannelOptionsEl.innerHTML = "";
+      experienceModeOptionsEl.innerHTML = "";
+
+      if (experienceModeHeadingEl) {
+        experienceModeHeadingEl.textContent = EXPERIENCE_CHANNEL_LOCKED || EXPERIENCE_MODE_LOCKED
+          ? `You're starting in ${getExperienceChannelLabel(runtimeExperienceChannel)} · ${getExperienceModeLabel(runtimeExperienceMode)}`
+          : "Start this scenario";
+      }
+
+      if (experienceModeCopyEl) {
+        experienceModeCopyEl.textContent = EXPERIENCE_CHANNEL_LOCKED || EXPERIENCE_MODE_LOCKED
+          ? "This launch was assigned by your learning path. Start when you're ready."
+          : "Which channel do you support?";
+      }
+
+      const channelOptions = EXPERIENCE_CHANNEL_LOCKED ? [runtimeExperienceChannel] : getAvailableChannelOptions();
+      channelOptions.forEach((entry) => {
+        const option = typeof entry === "string" ? getExperienceChannelOption(entry) : entry;
+        const disabled = !isChannelAvailable(option.mode);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "experience-channel-option";
+        button.dataset.experienceChannel = option.mode;
+        button.setAttribute("aria-pressed", String(option.mode === runtimeExperienceChannel));
+        if (option.mode === runtimeExperienceChannel) button.classList.add("selected");
+        if (EXPERIENCE_CHANNEL_LOCKED) button.classList.add("locked");
+        if (disabled) {
+          button.classList.add("disabled");
+          button.disabled = true;
+        }
+
+        button.innerHTML = `
+          <span class="experience-channel-title">${escHtml(option.title)}</span>
+          <span class="experience-channel-copy">${escHtml(option.purpose)}</span>
+          ${EXPERIENCE_CHANNEL_LOCKED ? '<span class="experience-mode-assignment">Assigned by your learning path</span>' : ''}
+        `;
+
+        button.addEventListener("click", () => {
+          if (EXPERIENCE_CHANNEL_LOCKED || disabled) return;
+          runtimeExperienceChannel = normalizeExperienceChannel(option.mode);
+          renderExperienceModeBadge();
+          renderExperienceModeStart();
+        });
+
+        experienceChannelOptionsEl.appendChild(button);
+      });
+
+      const modeOptions = EXPERIENCE_MODE_LOCKED ? [runtimeExperienceMode] : EXPERIENCE_MODE_OPTIONS;
+      modeOptions.forEach((entry) => {
+        const option = typeof entry === "string" ? getExperienceModeOption(entry) : entry;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "experience-mode-option";
+        button.dataset.experienceMode = option.mode;
+        button.setAttribute("aria-pressed", String(option.mode === runtimeExperienceMode));
+        if (option.mode === runtimeExperienceMode) button.classList.add("selected");
+        if (EXPERIENCE_MODE_LOCKED) button.classList.add("locked");
+
+        button.innerHTML = `
+          <span class="experience-mode-option-title">${escHtml(option.title)} Mode</span>
+          <span class="experience-mode-assignment">Assigned by your learning path</span>
+          <span class="experience-mode-option-purpose">${escHtml(option.purpose)}</span>
+          <ul class="experience-mode-option-list">
+            ${option.bullets.map((bullet) => `<li>${escHtml(bullet)}</li>`).join("")}
+          </ul>
+        `;
+
+        button.addEventListener("click", () => {
+          if (EXPERIENCE_MODE_LOCKED) return;
+          runtimeExperienceMode = normalizeExperienceMode(option.mode);
+          renderExperienceModeBadge();
+          renderExperienceModeStart();
+        });
+
+        experienceModeOptionsEl.appendChild(button);
+      });
+    }
+
+    function shouldAutoStartExperience() {
+      return EXPERIENCE_CHANNEL_LOCKED && EXPERIENCE_MODE_LOCKED && EXPERIENCE_MODE_AUTO_START;
+    }
+
+    function hideExperienceModeStart() {
+      viewportEl.classList.remove("awaiting-experience");
+      if (!experienceModeStartEl) return;
+      experienceModeStartEl.classList.remove("active");
+      experienceModeStartEl.setAttribute("aria-hidden", "true");
+    }
+
+    function routeToVoiceExperience() {
+      const url = new URL("ArticulateRise-VoiceExperience.html", window.location.href);
+      url.searchParams.set("scenarioId", SCENARIO_ID);
+      url.searchParams.set("apiBase", SESSION_BASE);
+      url.searchParams.set("channel", "voice");
+      url.searchParams.set("experienceMode", runtimeExperienceMode);
+      if (EXPERIENCE_CHANNEL_LOCKED) url.searchParams.set("channelLocked", "true");
+      if (EXPERIENCE_MODE_LOCKED) url.searchParams.set("experienceModeLocked", "true");
+      if (EXPERIENCE_MODE_AUTO_START) url.searchParams.set("autoStart", "true");
+      const ident = getAgentIdentity();
+      if (ident.agentName) url.searchParams.set("agentName", ident.agentName);
+      if (ident.agentId) url.searchParams.set("agentId", ident.agentId);
+      window.location.href = url.toString();
+    }
+
+    function launchExperienceMode(mode = runtimeExperienceMode) {
+      runtimeExperienceMode = normalizeExperienceMode(mode);
+      if (runtimeExperienceChannel === "voice") {
+        routeToVoiceExperience();
+        return;
+      }
+      hasExperienceLaunched = true;
+      hideExperienceModeStart();
+      renderExperienceModeBadge();
+      hideLearnCompletionPanel();
+      renderTranscript();
+      showGuidanceMode();
+      setChatEndedState(false);
+      autoResizeTextarea();
+      hideReviewOverlay();
+      clearPersistedFeedback();
+      updateLearnModeControls();
+      if (modeAllows("autoPlayChat")) {
+        beginChatSession();
+        startLearnModeAutomation();
+      } else beginChatSession();
+    }
+
     function clearPersistedFeedback() {
       try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
     }
 
-    function fitStage() {
-      const viewportWidth = viewportEl.clientWidth || window.innerWidth;
-      const viewportHeight = viewportEl.clientHeight || DESIGN_HEIGHT;
-      const scale = Math.min(viewportWidth / DESIGN_WIDTH, viewportHeight / DESIGN_HEIGHT);
-      const scaledWidth = DESIGN_WIDTH * scale;
-      const scaledHeight = DESIGN_HEIGHT * scale;
-      const offsetX = (viewportWidth - scaledWidth) / 2;
-      const offsetY = (viewportHeight - scaledHeight) / 2;
-      stageEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+    function clampSystemToolsWidth(width) {
+      const numeric = Number(width);
+      if (!Number.isFinite(numeric)) return SYSTEM_TOOLS_DEFAULT_WIDTH;
+      return Math.min(SYSTEM_TOOLS_MAX_WIDTH, Math.max(SYSTEM_TOOLS_MIN_WIDTH, numeric));
+    }
+
+    function applySystemToolsWidth(width, shouldPersist = true) {
+      const nextWidth = clampSystemToolsWidth(width);
+      document.documentElement.style.setProperty("--system-tools-width", `${nextWidth}%`);
+      if (workspaceResizer) {
+        workspaceResizer.setAttribute("aria-valuemin", String(SYSTEM_TOOLS_MIN_WIDTH));
+        workspaceResizer.setAttribute("aria-valuemax", String(SYSTEM_TOOLS_MAX_WIDTH));
+        workspaceResizer.setAttribute("aria-valuenow", String(Math.round(nextWidth)));
+      }
+
+      if (shouldPersist) {
+        try { sessionStorage.setItem(WORKSPACE_WIDTH_STORAGE_KEY, String(nextWidth)); } catch (_) {}
+      }
+    }
+
+    function restoreSystemToolsWidth() {
+      let storedWidth = "";
+      try { storedWidth = sessionStorage.getItem(WORKSPACE_WIDTH_STORAGE_KEY) || ""; } catch (_) {}
+      applySystemToolsWidth(storedWidth || SYSTEM_TOOLS_DEFAULT_WIDTH, false);
+    }
+
+    function updateSystemToolsWidthFromPointer(event) {
+      const rect = viewportEl.getBoundingClientRect();
+      const width = rect.width || window.innerWidth;
+      const x = event.clientX - rect.left;
+      const nextWidth = (x / width) * 100;
+      applySystemToolsWidth(nextWidth);
+    }
+
+    function stopWorkspaceResize() {
+      if (!workspaceResizer) return;
+      workspaceResizer.classList.remove("resizing");
+      window.removeEventListener("pointermove", updateSystemToolsWidthFromPointer);
+      window.removeEventListener("pointerup", stopWorkspaceResize);
+      window.removeEventListener("pointercancel", stopWorkspaceResize);
+    }
+
+    function startWorkspaceResize(event) {
+      if (!workspaceResizer) return;
+      event.preventDefault();
+      workspaceResizer.classList.add("resizing");
+      updateSystemToolsWidthFromPointer(event);
+      window.addEventListener("pointermove", updateSystemToolsWidthFromPointer);
+      window.addEventListener("pointerup", stopWorkspaceResize);
+      window.addEventListener("pointercancel", stopWorkspaceResize);
+    }
+
+    function nudgeSystemToolsWidth(delta) {
+      const current = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--system-tools-width")) || SYSTEM_TOOLS_DEFAULT_WIDTH;
+      applySystemToolsWidth(current + delta);
     }
 
     function autoResizeTextarea() {
@@ -2464,7 +3457,16 @@ NOTES
 
     function renderTranscript() {
       messagesEl.querySelectorAll(".message-row").forEach((el) => el.remove());
-      transcript.forEach((item) => appendMessage(item.role, item.content, item.label, item.meta, false));
+      messagesEl.querySelectorAll(".coach-tip-row").forEach((el) => el.remove());
+      inlineCoachTipCursor = 0;
+      let customerTurnIndex = 0;
+      transcript.forEach((item) => {
+        const isCustomerTurn = isCustomerRole(item.role);
+        const coachStep = isCustomerTurn && modeAllows("showHints")
+          ? selectInlineCoachStep(item.content, customerTurnIndex++)
+          : null;
+        appendMessage(item.role, item.content, item.label, item.meta, false, coachStep);
+      });
       scrollMessagesToBottom();
     }
 
@@ -2548,41 +3550,20 @@ NOTES
 
     function renderCoachSteps(steps) {
       runtimeCoachSteps = Array.isArray(steps) ? steps : [];
+      inlineCoachTipCursor = 0;
       if (!guidanceShell) return;
-
-      if (!runtimeCoachSteps.length) {
-        guidanceShell.innerHTML = `
-          <div class="section">
-            <h2>Coach Chewy</h2>
-            <p>Guidance will appear here when the scenario loads.</p>
-          </div>
-        `;
-        return;
-      }
-
-      guidanceShell.innerHTML = runtimeCoachSteps
-        .map((step, index) => {
-          const bulletsHtml = step.bullets.length
-            ? `<ul>${step.bullets.map((item) => `<li>${escHtml(item)}</li>`).join("")}</ul>`
-            : "";
-          return `
-            <div class="coach-step coach-step-upcoming" data-coach-step-index="${index}">
-              <div class="coach-step-marker" aria-hidden="true">${index + 1}</div>
-              <div>
-                <h2 class="coach-step-title">${escHtml(step.title)}</h2>
-                ${step.body ? `<p class="coach-step-body">${escHtml(step.body)}</p>` : ""}
-                ${bulletsHtml}
-              </div>
-            </div>
-          `;
-        })
-        .join("");
-
-      renderCoachProgress();
+      guidanceShell.innerHTML = "";
     }
 
     function renderCoachProgress() {
       if (!guidanceShell || !runtimeCoachSteps.length) return;
+      const progressTextEl = guidanceShell.querySelector(".coach-progress-text");
+      if (progressTextEl) {
+        progressTextEl.textContent = currentStep >= runtimeCoachSteps.length
+          ? "Wrap-up complete"
+          : `Phase ${Math.min(currentStep, runtimeCoachSteps.length - 1) + 1} of ${runtimeCoachSteps.length}`;
+      }
+
       const stepEls = guidanceShell.querySelectorAll("[data-coach-step-index]");
       stepEls.forEach((el) => {
         const index = Number(el.getAttribute("data-coach-step-index") || 0);
@@ -2637,6 +3618,54 @@ NOTES
       };
     }
 
+    function normalizeSystemWalkthroughMoments(moments, screens) {
+      if (!Array.isArray(moments)) return [];
+      const screenList = Array.isArray(screens) ? screens : [];
+      const screenIds = new Set(screenList.map((screen) => screen.id));
+      const validTriggers = new Set([
+        "ideal_step_started",
+        "ideal_step_completed",
+        "learner_needs_support",
+        "customer_turn_started",
+        "customer_turn_completed",
+        "chat_step"
+      ]);
+      return moments
+        .map((moment, index) => {
+          if (!moment || typeof moment !== "object") return null;
+          const stepId = Number(moment.stepId ?? moment.step ?? moment.currentStep);
+          const screenId = String(moment.screenId || moment.targetScreenId || "").trim();
+          const trigger = String(moment.trigger || "ideal_step_started").trim() || "ideal_step_started";
+          if (!Number.isFinite(stepId) || !screenId || !screenIds.has(screenId)) return null;
+          if (!validTriggers.has(trigger)) return null;
+          const targetScreen = screenList.find((screen) => screen.id === screenId);
+          const hotspotId = String(moment.hotspotId || moment.targetHotspotId || moment.hint?.hotspotId || "").trim();
+          const hasHotspot = !hotspotId || targetScreen?.hotspots?.some((hotspot) => hotspot.id === hotspotId);
+          if (!hasHotspot) return null;
+          const hint = moment.hint && typeof moment.hint === "object"
+            ? {
+                title: String(moment.hint.title || "").trim(),
+                body: String(moment.hint.body || moment.hint.text || "").trim(),
+                hotspotId: String(moment.hint.hotspotId || hotspotId || "").trim()
+              }
+            : null;
+          return {
+            id: String(moment.id || `${screenId}-step-${stepId}-${index + 1}`).trim(),
+            stepId,
+            screenId,
+            trigger,
+            title: String(moment.title || "").trim(),
+            description: String(moment.description || "").trim(),
+            hotspotId,
+            guideId: String(moment.guideId || "").trim(),
+            hint,
+            analyticsKey: String(moment.analyticsKey || "").trim(),
+            voiceCueId: String(moment.voiceCueId || "").trim()
+          };
+        })
+        .filter(Boolean);
+    }
+
     function normalizeSystemWalkthrough(walkthrough) {
       if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
       const screens = walkthrough.screens
@@ -2688,7 +3717,12 @@ NOTES
         })
         .filter(Boolean);
 
-      return screens.length ? { screens } : null;
+      return screens.length
+        ? {
+            screens,
+            moments: normalizeSystemWalkthroughMoments(walkthrough.moments, screens)
+          }
+        : null;
     }
 
     function resolveWalkthroughAssetSrc(image) {
@@ -2837,7 +3871,9 @@ NOTES
       if (!runtimeSystemWalkthrough) {
         activeSystemScreenId = "";
         selectedSystemHotspotId = "";
-        walkthroughScreenTitleEl.textContent = "System walkthrough";
+        if (walkthroughScreenTitleEl) {
+          walkthroughScreenTitleEl.textContent = "System walkthrough";
+        }
         walkthroughImageEl.style.display = "none";
         walkthroughImageEl.removeAttribute("src");
         walkthroughPlaceholderEl.style.display = "grid";
@@ -2861,7 +3897,9 @@ NOTES
       activeSystemScreenId = screen.id;
       clearSelectedSystemHotspot();
       if (!options.preserveFact) clearSystemFactSelection();
-      walkthroughScreenTitleEl.textContent = screen.title || "System walkthrough";
+      if (walkthroughScreenTitleEl) {
+        walkthroughScreenTitleEl.textContent = screen.title || "System walkthrough";
+      }
       const imageSrc = resolveWalkthroughAssetSrc(screen.image);
       if (imageSrc) {
         walkthroughImageEl.src = imageSrc;
@@ -2948,11 +3986,13 @@ NOTES
     }
 
     function clearSystemFactSelection() {
+      if (!walkthroughFactTitleEl || !walkthroughFactBodyEl) return;
       walkthroughFactTitleEl.textContent = "Select an area";
       walkthroughFactBodyEl.textContent = "Use System Tools to review the supporting fact or move to another screen.";
     }
 
     function showSystemFact(fact) {
+      if (!walkthroughFactTitleEl || !walkthroughFactBodyEl) return;
       walkthroughFactTitleEl.textContent = fact.title || "Fact";
       walkthroughFactBodyEl.textContent = fact.body || "";
     }
@@ -2962,6 +4002,158 @@ NOTES
         ...event,
         occurredAt: new Date().toISOString()
       });
+    }
+
+    function isLearnMomentTrigger(moment, trigger) {
+      const momentTrigger = String(moment?.trigger || "").trim();
+      return momentTrigger === trigger || (trigger === "ideal_step_started" && momentTrigger === "chat_step");
+    }
+
+    function activateSystemWalkthroughMoment(stepId, trigger = "ideal_step_started") {
+      const moment = runtimeSystemWalkthrough?.moments
+        ?.find((item) => item.stepId === stepId && isLearnMomentTrigger(item, trigger));
+      if (!moment) return false;
+
+      setActiveSystemScreen(moment.screenId);
+      if (moment.hotspotId) selectSystemHotspot(moment.hotspotId);
+      recordSystemWalkthroughEvent({
+        type: "moment",
+        screenId: moment.screenId,
+        hotspotId: moment.hotspotId || "",
+        targetScreenId: "",
+        factId: "",
+        momentId: moment.id || "",
+        analyticsKey: moment.analyticsKey || "",
+        trigger: moment.trigger || trigger,
+        stepId: moment.stepId
+      });
+      return true;
+    }
+
+    function getLearnModeAgentResponse(stepId) {
+      const scripted = runtimeLearnModeScript.find((item) => item.stepId === stepId);
+      if (scripted?.text) return scripted.text;
+
+      const coachStep = runtimeCoachSteps[stepId];
+      if (coachStep?.body) return coachStep.body;
+      if (Array.isArray(coachStep?.bullets) && coachStep.bullets.length) return coachStep.bullets.join(" ");
+
+      return "The agent demonstrates the recommended next step for this part of the conversation.";
+    }
+
+    function getLearnModeCustomerResponse(stepId) {
+      const step = Array.isArray(runtimeStepProgression) ? runtimeStepProgression[stepId] : null;
+      const configuredReply = String(step?.customerResponse || "").trim();
+      if (configuredReply) return configuredReply;
+      return FALLBACK_CUSTOMER_REPLIES[Math.min(stepId, FALLBACK_CUSTOMER_REPLIES.length - 1)] || "Thank you.";
+    }
+
+    function getLearnModeStepCount() {
+      const scriptedStepCount = runtimeLearnModeScript.reduce((max, step) => {
+        return Math.max(max, Number.isFinite(step?.stepId) ? step.stepId + 1 : 0);
+      }, 0);
+      const progressionStepCount = Array.isArray(runtimeStepProgression) ? runtimeStepProgression.length : 0;
+      const momentStepCount = Array.isArray(runtimeSystemWalkthrough?.moments)
+        ? runtimeSystemWalkthrough.moments.reduce((max, moment) => {
+            return Math.max(max, Number.isFinite(moment?.stepId) ? moment.stepId + 1 : 0);
+          }, 0)
+        : 0;
+      const coachStepCount = runtimeCoachSteps.length;
+      const authoredStepCount = Math.max(scriptedStepCount, progressionStepCount, momentStepCount, coachStepCount);
+      return authoredStepCount || getStepConfigLength();
+    }
+
+    function scheduleNextLearnModeStep(delayMs = LEARN_MODE_STEP_DELAY_MS) {
+      clearLearnModeTimer();
+      if (!modeAllows("autoPlayChat") || learnModePaused || learnModeCompleted || chatEnded) return;
+      learnModeTimer = setTimeout(advanceLearnModeStep, delayMs);
+    }
+
+    function startLearnModeAutomation() {
+      if (!modeAllows("autoPlayChat") || !sessionStarted || learnModeCompleted) return;
+      updateLearnModeControls();
+      scheduleNextLearnModeStep(500);
+    }
+
+    function advanceLearnModeStep() {
+      clearLearnModeTimer();
+      if (!modeAllows("autoPlayChat") || learnModePaused || learnModeCompleted || chatEnded) return;
+
+      const stepId = currentStep;
+      if (stepId >= getLearnModeStepCount()) {
+        completeLearnModeDemo();
+        return;
+      }
+
+      if (modeAllows("autoNavigateSystemTools")) {
+        activateSystemWalkthroughMoment(stepId, "ideal_step_started");
+      }
+
+      const agentText = getLearnModeAgentResponse(stepId);
+      const agentTurn = { role: "agent", content: agentText, label: "Agent" };
+      transcript.push(agentTurn);
+      appendMessage("agent", agentTurn.content, agentTurn.label);
+
+      const customerText = getLearnModeCustomerResponse(stepId);
+      if (customerText) {
+        const customerTurn = {
+          role: "assistant",
+          content: customerText,
+          label: "Customer",
+          meta: getChatCustomerDisplayName()
+        };
+        transcript.push(customerTurn);
+        appendMessage("assistant", customerTurn.content, customerTurn.label, customerTurn.meta);
+      }
+
+      currentStep = stepId + 1;
+      if (currentStep >= getLearnModeStepCount()) {
+        scheduleNextLearnModeStep(LEARN_MODE_STEP_DELAY_MS);
+      } else {
+        scheduleNextLearnModeStep();
+      }
+    }
+
+    function completeLearnModeDemo() {
+      if (!isLearnMode()) return;
+      clearLearnModeTimer();
+      learnModeCompleted = true;
+      chatEnded = true;
+      endedAt = new Date().toISOString();
+      setChatEndedState(true);
+      showLearnCompletionPanel();
+      updateLearnModeControls();
+      scrollMessagesToBottom();
+    }
+
+    function pauseLearnModeDemo() {
+      if (!modeAllows("autoPlayChat") || learnModeCompleted) return;
+      learnModePaused = true;
+      clearLearnModeTimer();
+      updateLearnModeControls();
+    }
+
+    function resumeLearnModeDemo() {
+      if (!modeAllows("autoPlayChat") || learnModeCompleted) return;
+      learnModePaused = false;
+      updateLearnModeControls();
+      scheduleNextLearnModeStep(300);
+    }
+
+    function restartLearnModeDemo() {
+      if (!modeAllows("autoPlayChat")) return;
+      clearLearnModeTimer();
+      learnModePaused = false;
+      learnModeCompleted = false;
+      resetChatActivityForNewAttempt();
+    }
+
+    function switchExperienceModeAndRestart(mode) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("experienceMode", normalizeExperienceMode(mode));
+      url.searchParams.delete("experienceModeLocked");
+      url.searchParams.delete("autoStart");
+      window.location.href = url.toString();
     }
 
 
@@ -3106,6 +4298,7 @@ NOTES
           if (!step || typeof step !== "object") return null;
           return {
             id: Number.isFinite(step.id) ? step.id : 0,
+            customerResponse: String(step.customerResponse || "").trim(),
             match: {
               all: Array.isArray(step?.match?.all) ? step.match.all : [],
               any: Array.isArray(step?.match?.any) ? step.match.any : []
@@ -3117,10 +4310,42 @@ NOTES
       return normalized.length && normalized.every(isValidStepRule) ? normalized : null;
     }
 
+    function buildLearnModeScriptFromConfig(config) {
+      const steps = config?.chatConfig?.learnModeScript;
+      if (!Array.isArray(steps)) return [];
+
+      return steps
+        .map((step, index) => {
+          const text = String(step?.text || step?.content || "").trim();
+          if (!text) return null;
+          return {
+            stepId: Number.isFinite(step.stepId) ? step.stepId : index,
+            text
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function resolveScenarioSystemWalkthrough(config) {
+      const configuredWalkthrough = config?.frontend?.chat?.systemWalkthrough;
+      if (configuredWalkthrough && typeof configuredWalkthrough === "object") {
+        return configuredWalkthrough;
+      }
+
+      return SCENARIO_ID === "late_delivery_20_partial_refund_chat"
+        ? LOCAL_PREVIEW_SYSTEM_WALKTHROUGH
+        : null;
+    }
+
     function applyScenarioDisplayConfig(config) {
       if (!config || typeof config !== "object") return;
 
       scenarioDisplayConfig = config;
+      runtimeSupportedChannels = Array.isArray(config.channels) && config.channels.length
+        ? config.channels.map(normalizeExperienceChannel).filter((channel, index, items) => items.indexOf(channel) === index)
+        : ["chat"];
+      runtimeExperienceChannel = normalizeExperienceChannel(EXPERIENCE_CHANNEL_OVERRIDE || config?.defaultChannel || runtimeSupportedChannels[0] || "chat");
+      runtimeExperienceMode = normalizeExperienceMode(EXPERIENCE_MODE_OVERRIDE || (EXPERIENCE_MODE_LOCKED ? config?.experienceMode : "learn"));
 
       const hotkeyMap = buildHotkeyMapFromConfig(config);
       if (hotkeyMap) {
@@ -3133,9 +4358,12 @@ NOTES
       } else {
         console.warn("Scenario step progression config missing or invalid; falling back to built-in step config.");
       }
+      runtimeLearnModeScript = buildLearnModeScriptFromConfig(config);
 
       rightPaneTitle.textContent = "Coach Chewy";
       chatHeaderTitle.textContent = `Customer: ${getChatCustomerDisplayName()}`;
+      renderLaunchScenarioSummary();
+      renderExperienceModeBadge();
 
       const coachSteps = normalizeCoachSteps(config?.frontend?.chat?.coachSteps);
       const guideSections = config?.frontend?.chat?.guideSections;
@@ -3144,11 +4372,11 @@ NOTES
         renderCoachSteps(coachSteps);
       } else if (fallbackCoachSteps.length) {
         renderCoachSteps(fallbackCoachSteps);
-      } else if (Array.isArray(guideSections) && guideSections.length) {
-        renderGuideSections(guideSections);
+      } else {
+        renderCoachSteps([]);
       }
 
-      renderSystemWalkthrough(config?.frontend?.chat?.systemWalkthrough);
+      renderSystemWalkthrough(resolveScenarioSystemWalkthrough(config));
 
       const initialTurns = config?.frontend?.chat?.initialTranscript;
       if (Array.isArray(initialTurns) && initialTurns.length) {
@@ -3158,13 +4386,18 @@ NOTES
     }
 
     async function loadScenarioDisplayConfig() {
-      const url = `${SCENARIO_CONFIG_URL}?scenarioId=${encodeURIComponent(SCENARIO_ID)}`;
+      const params = new URLSearchParams({ scenarioId: SCENARIO_ID });
+      if (EXPERIENCE_MODE_OVERRIDE) {
+        params.set("experienceMode", EXPERIENCE_MODE_OVERRIDE);
+      }
+      params.set("channel", runtimeExperienceChannel);
+      const url = `${SCENARIO_CONFIG_URL}?${params.toString()}`;
       const data = await fetchJSON(url, { method: "GET" }, 20000);
       if (!data || data.error || !data.scenario || typeof data.scenario !== "object") return null;
       return data.scenario;
     }
 
-    function appendMessage(role, text, label, meta = "", shouldScroll = true) {
+    function appendMessage(role, text, label, meta = "", shouldScroll = true, coachStep = null) {
       const row = document.createElement("div");
       row.className = `message-row ${mapRoleToClass(role)}`;
 
@@ -3186,8 +4419,101 @@ NOTES
 
       row.appendChild(metaEl);
       messagesEl.appendChild(row);
+      if (isCustomerRole(role) && modeAllows("showHints")) {
+        appendInlineCoachTip(coachStep || selectInlineCoachStep(text), false);
+      }
 
       if (shouldScroll) scrollMessagesToBottom();
+    }
+
+    function appendInlineCoachTip(step, shouldScroll = true) {
+      const resolvedStep = step || getDefaultInlineCoachStep();
+      const bullets = Array.isArray(resolvedStep.bullets) ? resolvedStep.bullets : [];
+      const row = document.createElement("div");
+      row.className = "coach-tip-row";
+      row.setAttribute("aria-label", "Coach Chewy Tip");
+
+      const avatar = document.createElement("div");
+      avatar.className = "coach-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.innerHTML = `<img src="${COACH_CHEWY_IMAGE_SRC}" alt="" />`;
+
+      const card = document.createElement("div");
+      card.className = "coach-tip-card";
+      card.innerHTML = `
+        <p class="coach-tip-label">Coach Chewy Tip</p>
+        <h3 class="coach-tip-title">${escHtml(resolvedStep.title || "Try this next")}</h3>
+        ${resolvedStep.body ? `<p class="coach-tip-body">${escHtml(resolvedStep.body)}</p>` : ""}
+        ${bullets.length ? `<ul class="coach-tip-bullets">${bullets.map((item) => `<li>${escHtml(item)}</li>`).join("")}</ul>` : ""}
+      `;
+
+      row.appendChild(avatar);
+      row.appendChild(card);
+      messagesEl.appendChild(row);
+      if (shouldScroll) scrollMessagesToBottom();
+    }
+
+    function selectInlineCoachStep(latestCustomerMessage = "", preferredIndex = currentStep) {
+      const steps = runtimeCoachSteps.length ? runtimeCoachSteps : [getDefaultInlineCoachStep()];
+      const keywordIndex = findBestCoachStepMatch(latestCustomerMessage, steps);
+      if (keywordIndex >= 0) {
+        inlineCoachTipCursor = Math.max(inlineCoachTipCursor, keywordIndex + 1);
+        return steps[keywordIndex];
+      }
+
+      if (Number.isInteger(preferredIndex) && preferredIndex >= 0 && preferredIndex < steps.length) {
+        inlineCoachTipCursor = Math.max(inlineCoachTipCursor, preferredIndex + 1);
+        return steps[preferredIndex];
+      }
+
+      const fallbackIndex = Math.min(inlineCoachTipCursor, steps.length - 1);
+      inlineCoachTipCursor = Math.min(fallbackIndex + 1, steps.length);
+      return steps[fallbackIndex] || getDefaultInlineCoachStep();
+    }
+
+    function findBestCoachStepMatch(message, steps) {
+      const messageTokens = getCoachTipTokens(message);
+      if (!messageTokens.length) return -1;
+
+      let bestIndex = -1;
+      let bestScore = 0;
+      steps.forEach((step, index) => {
+        const stepText = [
+          step.title,
+          step.body,
+          ...(Array.isArray(step.bullets) ? step.bullets : [])
+        ].join(" ");
+        const stepTokens = new Set(getCoachTipTokens(stepText));
+        const score = messageTokens.reduce((total, token) => total + (stepTokens.has(token) ? 1 : 0), 0);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      });
+
+      return bestScore > 0 ? bestIndex : -1;
+    }
+
+    function getCoachTipTokens(value) {
+      const stopWords = new Set(["about", "after", "again", "also", "and", "are", "but", "can", "for", "from", "have", "into", "just", "let", "now", "our", "out", "that", "the", "this", "use", "was", "what", "when", "why", "will", "with", "you", "your"]);
+      return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((token) => token.length > 2 && !stopWords.has(token));
+    }
+
+    function getDefaultInlineCoachStep() {
+      return {
+        id: "default-inline-coach-tip",
+        title: "Start with Ownership",
+        body: "Respond to the customer's latest concern before moving into details.",
+        bullets: [
+          "Acknowledge the issue",
+          "Use plain language",
+          "Share the next step you will take"
+        ]
+      };
     }
 
     function mapRoleToClass(role) {
@@ -3196,6 +4522,10 @@ NOTES
       if (role === "system") return "system";
       if (role === "user") return "customer";
       return "customer";
+    }
+
+    function isCustomerRole(role) {
+      return role === "assistant" || role === "user";
     }
 
     function scrollMessagesToBottom() {
@@ -3684,6 +5014,7 @@ NOTES
     }
 
     function showFeedbackMode() {
+      if (appEl) appEl.classList.add("report-mode");
       hideLoadingState();
       feedbackShell.classList.add("active");
       guidanceShell.style.display = "none";
@@ -3691,6 +5022,7 @@ NOTES
     }
 
     function showGuidanceMode() {
+      if (appEl) appEl.classList.remove("report-mode");
       hideLoadingState();
       feedbackShell.classList.remove("active");
       guidanceShell.style.display = "block";
@@ -3699,6 +5031,7 @@ NOTES
     }
 
     function showLoadingState() {
+      if (appEl) appEl.classList.add("report-mode");
       feedbackShell.classList.remove("active");
       guidanceShell.style.display = "none";
       loadingShell.classList.add("active");
@@ -3910,7 +5243,8 @@ NOTES
 
       setChatEndedState(false);
       chatStartedText.textContent = formatStartedTime();
-      composerEl.focus();
+      updateLearnModeControls();
+      if (modeAllows("allowLearnerResponse")) composerEl.focus();
     }
 
     function buildQualityBehaviorsFromEvaluation(evaluation) {
@@ -3969,6 +5303,10 @@ NOTES
         hotspotId: String(event.hotspotId || "").trim(),
         targetScreenId: String(event.targetScreenId || "").trim(),
         factId: String(event.factId || "").trim(),
+        momentId: String(event.momentId || "").trim(),
+        analyticsKey: String(event.analyticsKey || "").trim(),
+        trigger: String(event.trigger || "").trim(),
+        stepId: Number.isFinite(event.stepId) ? event.stepId : null,
         occurredAt: String(event.occurredAt || "").trim()
       }));
     }
@@ -4099,6 +5437,7 @@ NOTES
     }
 
     async function sendMessage() {
+      if (!modeAllows("allowLearnerResponse")) return;
       if (!sessionStarted || chatEnded || isEvaluating || isStandardTextOpen()) return;
 
       const text = composerEl.value.trim();
@@ -4125,9 +5464,8 @@ NOTES
           meta: getChatCustomerDisplayName()
         };
         transcript.push(replyTurn);
-        appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta);
+        appendMessage("assistant", replyTurn.content, replyTurn.label, replyTurn.meta, true, selectInlineCoachStep(replyTurn.content, nextStep));
         currentStep = nextStep;
-        renderCoachProgress();
       } catch (error) {
         const errorTurn = {
           role: "system",
@@ -4217,25 +5555,29 @@ NOTES
     }
 
     function setComposerState(isBusy) {
-      sendBtn.disabled = isBusy || !sessionStarted;
-      composerEl.disabled = isBusy || chatEnded || !sessionStarted;
-      sendBtn.classList.toggle("primary-active", !isBusy && !chatEnded && sessionStarted);
-      headerEndBtn.disabled = isBusy || !sessionStarted;
+      const canRespond = modeAllows("allowLearnerResponse");
+      sendBtn.disabled = !canRespond || isBusy || !sessionStarted;
+      composerEl.disabled = !canRespond || isBusy || chatEnded || !sessionStarted;
+      sendBtn.classList.toggle("primary-active", canRespond && !isBusy && !chatEnded && sessionStarted);
+      headerEndBtn.disabled = !canRespond || isBusy || !sessionStarted;
     }
 
     function setChatEndedState(ended) {
       chatEnded = ended;
-      composerEl.disabled = ended || isEvaluating || !sessionStarted;
-      sendBtn.disabled = ended || isEvaluating || !sessionStarted;
-      sendBtn.classList.toggle("primary-active", !(ended || isEvaluating || !sessionStarted));
-      headerEndBtn.disabled = ended || isEvaluating || !sessionStarted;
+      const canRespond = modeAllows("allowLearnerResponse");
+      composerEl.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
+      sendBtn.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
+      sendBtn.classList.toggle("primary-active", canRespond && !(ended || isEvaluating || !sessionStarted));
+      headerEndBtn.disabled = !canRespond || ended || isEvaluating || !sessionStarted;
     }
 
     function resetChatActivityForNewAttempt() {
+      clearLearnModeTimer();
       closeEndModal();
       hideReviewOverlay();
       hideLoadingState();
       clearPersistedFeedback();
+      hideLearnCompletionPanel();
 
       transcript = getConfiguredInitialTranscript();
       currentStep = 0;
@@ -4243,6 +5585,8 @@ NOTES
       renderSystemWalkthrough(scenarioDisplayConfig?.frontend?.chat?.systemWalkthrough);
       chatEnded = false;
       isEvaluating = false;
+      learnModePaused = false;
+      learnModeCompleted = false;
       sessionStarted = false;
       sessionId = null;
       startedAt = null;
@@ -4255,8 +5599,8 @@ NOTES
       renderTranscript();
       showGuidanceMode();
       beginChatSession();
+      if (modeAllows("autoPlayChat")) startLearnModeAutomation();
       autoResizeTextarea();
-      fitStage();
     }
 
     function handleReportAction(action) {
@@ -4266,6 +5610,7 @@ NOTES
     }
 
     async function completeEndChat() {
+      if (isLearnMode() && (!modeAllows("generateEvaluation") || !modeAllows("generateCoachingReport"))) return;
       if (!sessionStarted || chatEnded || isEvaluating || isStandardTextOpen()) return;
 
       closeEndModal();
@@ -4306,17 +5651,6 @@ NOTES
       }
     }
 
-    chatAccordion.addEventListener("toggle", () => {
-      syncAccordionLabel();
-      if (chatAccordion.open) {
-        setTimeout(fitStage, 50);
-        setTimeout(fitStage, 200);
-        setTimeout(beginChatSession, 0);
-      }
-    });
-
-    syncAccordionLabel();
-
     sendBtn.addEventListener("click", sendMessage);
     headerEndBtn.addEventListener("click", openEndModal);
     confirmEndBtn.addEventListener("click", completeEndChat);
@@ -4330,6 +5664,13 @@ NOTES
     });
 
     standardTextCloseBtn.addEventListener("click", closeStandardTextModal);
+    experienceModeStartBtn.addEventListener("click", () => launchExperienceMode(runtimeExperienceMode));
+    learnPauseBtn.addEventListener("click", pauseLearnModeDemo);
+    learnResumeBtn.addEventListener("click", resumeLearnModeDemo);
+    learnRestartBtn.addEventListener("click", restartLearnModeDemo);
+    learnCompletionRestartBtn.addEventListener("click", restartLearnModeDemo);
+    learnPracticeBtn.addEventListener("click", () => switchExperienceModeAndRestart("practice"));
+    learnApplyBtn.addEventListener("click", () => switchExperienceModeAndRestart("apply"));
 
     standardTextOverlay.addEventListener("click", (event) => {
       if (event.target === standardTextOverlay) closeStandardTextModal();
@@ -4363,8 +5704,6 @@ NOTES
     });
 
     document.addEventListener("keydown", (event) => {
-      if (!chatAccordion.open) return;
-
       if (event.key === "F8") {
         event.preventDefault();
         openStandardTextModal();
@@ -4386,7 +5725,30 @@ NOTES
     });
 
     composerEl.addEventListener("input", autoResizeTextarea);
-    window.addEventListener("resize", fitStage);
+    if (workspaceResizer) {
+      workspaceResizer.addEventListener("pointerdown", startWorkspaceResize);
+      workspaceResizer.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          nudgeSystemToolsWidth(-1);
+        }
+
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          nudgeSystemToolsWidth(1);
+        }
+
+        if (event.key === "Home") {
+          event.preventDefault();
+          applySystemToolsWidth(SYSTEM_TOOLS_MIN_WIDTH);
+        }
+
+        if (event.key === "End") {
+          event.preventDefault();
+          applySystemToolsWidth(SYSTEM_TOOLS_MAX_WIDTH);
+        }
+      });
+    }
 
     const storedAgentName = localStorage.getItem(AGENT_NAME_STORAGE_KEY) || "";
     const storedAgentId = localStorage.getItem(AGENT_ID_STORAGE_KEY) || "";
@@ -4395,16 +5757,24 @@ NOTES
 
     async function initializeChatExperience() {
       renderIntroInstructions(STATIC_CHAT_INSTRUCTIONS);
+      clearLearnModeTimer();
       runtimeHotkeyMap = { ...STANDARD_TEXT_MAP };
       runtimeStepProgression = null;
+      runtimeLearnModeScript = [];
       runtimeCoachSteps = [];
+      runtimeExperienceMode = "apply";
+      hasExperienceLaunched = false;
+      learnModePaused = false;
+      learnModeCompleted = false;
+      hideExperienceModeStart();
+      hideLearnCompletionPanel();
+      renderExperienceModeBadge();
       renderSystemWalkthrough(null);
       scenarioLoadFailed = false;
 
       if (!SCENARIO_ID) {
         renderScenarioUnavailable(MISSING_SCENARIO_ID_MESSAGE);
         autoResizeTextarea();
-        fitStage();
         return;
       }
 
@@ -4420,7 +5790,6 @@ NOTES
         console.error(message, error);
         renderScenarioUnavailable(message);
         autoResizeTextarea();
-        fitStage();
         return;
       }
 
@@ -4429,12 +5798,16 @@ NOTES
       setChatEndedState(false);
       autoResizeTextarea();
       hideReviewOverlay();
-      fitStage();
       clearPersistedFeedback();
 
-      if (chatAccordion.open) beginChatSession();
+      if (shouldAutoStartExperience()) {
+        launchExperienceMode(runtimeExperienceMode);
+      } else {
+        renderExperienceModeStart();
+      }
     }
 
+    restoreSystemToolsWidth();
     initializeChatExperience();
   </script>
 </body>

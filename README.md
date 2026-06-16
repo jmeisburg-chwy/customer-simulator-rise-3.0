@@ -105,6 +105,81 @@ Expected S3 keys for the current late delivery package:
 
 The chat scenario owns chat step progression gates. The voice scenario is voice-only and no longer advertises outdated chat progression fields.
 
+## Scenario Launch
+
+`ArticulateRise-ChatExperience.html` is the neutral Rise entry point for this slice. It shows the assigned scenario, asks the learner which supported channel they use, defaults the unlocked learner choice to `Chat · Learn Mode`, and then launches either the local chat runtime or the voice runtime.
+
+Channel resolution order:
+
+1. URL parameter: `?channel=chat|voice`
+2. Host config: `window.CCS_CONFIG.channel`
+3. Scenario default: `defaultChannel`
+4. Fallback: `chat`
+
+Invalid channel values normalize to `chat`. If a scenario has one supported channel, unsupported channel choices are disabled in the launcher.
+
+Experience Mode resolution still uses the approved runtime architecture:
+
+1. URL parameter: `?experienceMode=learn|practice|apply`
+2. Host config: `window.CCS_CONFIG.experienceMode`
+3. Future manager or Rise launch config
+4. Scenario default: `experienceMode`
+5. Fallback: `apply`
+
+For the unlocked launch UI only, an unresolved learner choice starts on Learn Mode. Once the learner starts, channel and mode changes require relaunching with new URL or host config state.
+
+Launch config supports:
+
+```js
+window.CCS_CONFIG = {
+  channel: "voice",
+  channelLocked: true,
+  experienceMode: "learn",
+  experienceModeLocked: true,
+  autoStart: false
+};
+```
+
+When both channel and mode are locked and `autoStart` is true, the launcher bypasses the start screen. Locked without autostart shows the assigned channel and mode with a Start button.
+
+## Voice Learn
+
+Voice Learn V1 uses authored MP3 demonstrations, not realtime voice AI. It does not request the microphone, open a realtime session, generate evaluation, or save a coaching report.
+
+Voice Learn assets live under the scenario contract:
+
+```json
+{
+  "frontend": {
+    "voice": {
+      "learn": {
+        "defaultDemoId": "modeled-call-v1",
+        "demonstrations": [
+          {
+            "id": "modeled-call-v1",
+            "title": "Modeled Voice Interaction",
+            "audio": {
+              "assetKey": "scenario_id/voice-learn/modeled-call-v1.mp3",
+              "src": "",
+              "mimeType": "audio/mpeg",
+              "durationSeconds": 120
+            },
+            "cuePoints": [
+              { "timeSeconds": 0, "momentId": "learn-intro" }
+            ],
+            "transcript": [
+              { "speaker": "customer", "text": "Customer opening voice line." }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+Cue points reference `frontend.chat.systemWalkthrough.moments[*].id`. The moment resolves to a `screenId`, and the voice runtime displays the existing System Tools screenshot for that screen. Keep MP3 files out of JSON; prefer `audio.assetKey` with `audio.src` as a preview or hosted fallback.
+
 ## Lambda API
 
 Required API routes:

@@ -586,6 +586,19 @@
           "pauseAfter": false
         }
       ],
+      "systemWalkthrough": {
+        "screens": [
+          {
+            "id": "system-tools-1",
+            "title": "System Tools",
+            "image": {
+              "src": "assets/system-tools/1.png",
+              "alt": "System Tools screenshot 1"
+            },
+            "hotspots": []
+          }
+        ]
+      },
       "standardText": []
     },
     "voice": {

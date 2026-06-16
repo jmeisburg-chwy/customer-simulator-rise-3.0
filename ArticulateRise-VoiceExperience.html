@@ -375,6 +375,103 @@ NOTES
       pointer-events: none;
     }
 
+    .experience-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .voice-learn-panel {
+      display: none;
+      margin-top: 22px;
+      border: 1px solid #b8d5f2;
+      border-radius: 12px;
+      background: #f8fbff;
+      overflow: hidden;
+    }
+
+    .voice-learn-panel.active {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+      gap: 0;
+    }
+
+    .voice-learn-system,
+    .voice-learn-player {
+      padding: 18px;
+    }
+
+    .voice-learn-system {
+      border-right: 1px solid #b8d5f2;
+      background: #eef6ff;
+    }
+
+    .voice-learn-screen {
+      min-height: 320px;
+      border: 1px solid #b8d5f2;
+      border-radius: 8px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .voice-learn-screen img {
+      max-width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      display: none;
+    }
+
+    .voice-learn-screen.has-image img {
+      display: block;
+    }
+
+    .voice-learn-placeholder {
+      color: #475467;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .voice-learn-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .voice-learn-transcript {
+      margin-top: 16px;
+      display: grid;
+      gap: 8px;
+      color: #344054;
+      font-size: .94rem;
+    }
+
+    .voice-learn-completion {
+      display: none;
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #b8d5f2;
+      border-radius: 8px;
+      background: #fff;
+      font-weight: 700;
+    }
+
+    .voice-learn-completion.active {
+      display: block;
+    }
+
     .guide-shell {
       display: none;
       margin-top: 22px;
@@ -1245,6 +1342,15 @@ NOTES
       .wrap {
         padding: 18px;
       }
+
+      .voice-learn-panel.active {
+        grid-template-columns: 1fr;
+      }
+
+      .voice-learn-system {
+        border-right: 0;
+        border-bottom: 1px solid #b8d5f2;
+      }
     }
 
     @media (max-width:640px) {
@@ -1271,7 +1377,7 @@ NOTES
 <body>
   <div class="page">
     <div class="experience-card">
-      <details id="voiceAccordion">
+      <details id="voiceAccordion" open>
         <summary aria-controls="voiceBody">
           <div class="experience-copy">
             <h2 class="experience-title">Voice Experience</h2>
@@ -1310,6 +1416,7 @@ NOTES
                 <div class="title">Chewy Customer Simulator</div>
                 <div class="subtitle">Apply what you've learned in a practice live call, then get coaching.</div>
               </div>
+              <span class="experience-mode-badge" id="voiceExperienceBadge" data-experience-channel="voice" data-experience-mode="learn">Voice · Learn Mode</span>
             </div>
 
             <div class="row">
@@ -1328,9 +1435,30 @@ NOTES
               <span id="status">Loading scenarios...</span>
             </div>
             <div class="hint" id="hint">If the scenario dropdown does not load, confirm the API URL and CORS settings.</div>
-            <div class="call-start-callout">ℹ️ Begin by speaking your <strong>Chewy greeting</strong>.</div>
+            <div class="call-start-callout" id="callStartCallout">ℹ️ Begin by speaking your <strong>Chewy greeting</strong>.</div>
 
             <audio id="assistant" autoplay></audio>
+            <div class="voice-learn-panel" id="voiceLearnPanel" aria-live="polite">
+              <div class="voice-learn-system">
+                <h2>System Tools</h2>
+                <div class="voice-learn-screen" id="voiceLearnScreen">
+                  <img id="voiceLearnScreenshot" alt="" />
+                  <div class="voice-learn-placeholder" id="voiceLearnPlaceholder">System walkthrough will appear here.</div>
+                </div>
+              </div>
+              <div class="voice-learn-player">
+                <h2 id="voiceLearnTitle">Modeled voice interaction</h2>
+                <p>Listen to the complete demonstration while System Tools follows the scenario moments.</p>
+                <audio id="voiceLearnAudio" preload="metadata" controls></audio>
+                <div class="voice-learn-controls">
+                  <button id="voiceLearnPlayBtn" class="btn" type="button">Play</button>
+                  <button id="voiceLearnPauseBtn" class="ghost-btn" type="button">Pause</button>
+                  <button id="voiceLearnRestartBtn" class="ghost-btn" type="button">Restart</button>
+                </div>
+                <div class="voice-learn-transcript" id="voiceLearnTranscript"></div>
+                <div class="voice-learn-completion" id="voiceLearnCompletionPanel">You have completed the demonstration.</div>
+              </div>
+            </div>
 
             <div id="guideShell" class="guide-shell">
               <div id="guideTopNote" class="guide-top-note"></div>
@@ -1379,9 +1507,64 @@ NOTES
     const SCENARIO_OVERRIDE = "";
     const MISSING_SCENARIO_ID_MESSAGE = "Scenario unavailable: scenarioId is required. Provide ?scenarioId=..., window.CCS_CONFIG.scenarioId, or set SCENARIO_OVERRIDE for a locked package.";
 
-    function getRuntimeConfigValue(key) {
+    function getRuntimeConfigRawValue(key) {
       const config = window.CCS_CONFIG && typeof window.CCS_CONFIG === "object" ? window.CCS_CONFIG : {};
-      return String(config[key] || "").trim();
+      return config[key];
+    }
+
+    function getRuntimeConfigValue(key) {
+      return String(getRuntimeConfigRawValue(key) || "").trim();
+    }
+
+    function normalizeExperienceMode(value) {
+      const mode = String(value || "").trim().toLowerCase();
+      return ["learn", "practice", "apply"].includes(mode) ? mode : "apply";
+    }
+
+    function normalizeExperienceChannel(value) {
+      const channel = String(value || "").trim().toLowerCase();
+      return ["chat", "voice"].includes(channel) ? channel : "chat";
+    }
+
+    function normalizeBooleanConfig(value) {
+      if (value === true) return true;
+      if (value === false) return false;
+      const normalized = String(value || "").trim().toLowerCase();
+      return ["1", "true", "yes", "on"].includes(normalized);
+    }
+
+    function resolveExperienceModeOverride() {
+      const urlExperienceMode = String(new URLSearchParams(window.location.search).get("experienceMode") || "").trim();
+      if (urlExperienceMode) return normalizeExperienceMode(urlExperienceMode);
+      const configuredExperienceMode = getRuntimeConfigValue("experienceMode");
+      if (configuredExperienceMode) return normalizeExperienceMode(configuredExperienceMode);
+      return "";
+    }
+
+    function resolveChannelOverride() {
+      const urlChannel = String(new URLSearchParams(window.location.search).get("channel") || "").trim();
+      if (urlChannel) return normalizeExperienceChannel(urlChannel);
+      const configuredChannel = getRuntimeConfigValue("channel");
+      if (configuredChannel) return normalizeExperienceChannel(configuredChannel);
+      return "";
+    }
+
+    function resolveExperienceModeLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("experienceModeLocked")) return normalizeBooleanConfig(params.get("experienceModeLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("experienceModeLocked"));
+    }
+
+    function resolveChannelLock() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("channelLocked")) return normalizeBooleanConfig(params.get("channelLocked"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("channelLocked"));
+    }
+
+    function resolveExperienceModeAutoStart() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("autoStart")) return normalizeBooleanConfig(params.get("autoStart"));
+      return normalizeBooleanConfig(getRuntimeConfigRawValue("autoStart"));
     }
 
     function resolveApiBase() {
@@ -1413,6 +1596,11 @@ NOTES
     const INGEST_TOKEN = "";
 
     const ACTIVE_SCENARIO_ID = resolveScenarioId();
+    const EXPERIENCE_MODE_OVERRIDE = resolveExperienceModeOverride();
+    const EXPERIENCE_CHANNEL_OVERRIDE = resolveChannelOverride();
+    const EXPERIENCE_MODE_LOCKED = resolveExperienceModeLock();
+    const EXPERIENCE_CHANNEL_LOCKED = resolveChannelLock();
+    const EXPERIENCE_MODE_AUTO_START = resolveExperienceModeAutoStart();
     const HIDE_SCENARIO_DROPDOWN = true;
 
     const STORE = window.localStorage;
@@ -1448,6 +1636,19 @@ NOTES
     const guideContentEl = document.getElementById('guideContent');
     const toggleGuideBtn = document.getElementById('toggleGuideBtn');
     const endAreaEl = document.getElementById('endArea');
+    const callStartCalloutEl = document.getElementById('callStartCallout');
+    const voiceExperienceBadgeEl = document.getElementById('voiceExperienceBadge');
+    const voiceLearnPanel = document.getElementById('voiceLearnPanel');
+    const voiceLearnAudio = document.getElementById('voiceLearnAudio');
+    const voiceLearnPlayBtn = document.getElementById('voiceLearnPlayBtn');
+    const voiceLearnPauseBtn = document.getElementById('voiceLearnPauseBtn');
+    const voiceLearnRestartBtn = document.getElementById('voiceLearnRestartBtn');
+    const voiceLearnTitle = document.getElementById('voiceLearnTitle');
+    const voiceLearnTranscript = document.getElementById('voiceLearnTranscript');
+    const voiceLearnCompletionPanel = document.getElementById('voiceLearnCompletionPanel');
+    const voiceLearnScreen = document.getElementById('voiceLearnScreen');
+    const voiceLearnScreenshot = document.getElementById('voiceLearnScreenshot');
+    const voiceLearnPlaceholder = document.getElementById('voiceLearnPlaceholder');
     const STATIC_VOICE_INSTRUCTIONS = [
       "Click <strong>Start</strong> and allow microphone access.",
       "Begin the call by stating your <strong>Chewy greeting</strong>.",
@@ -1469,6 +1670,11 @@ NOTES
     let evaluationRetryCancelled = false;
     let scenarioDisplayConfig = null;
     let scenarioLoadFailed = false;
+    let runtimeExperienceChannel = "voice";
+    let runtimeExperienceMode = "learn";
+    let runtimeVoiceLearnDemos = [];
+    let runtimeSystemWalkthrough = null;
+    let triggeredVoiceLearnCueIndexes = new Set();
 
     if (HIDE_SCENARIO_DROPDOWN) {
       const label = scenarioSel.closest("label");
@@ -1492,6 +1698,205 @@ NOTES
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
+    }
+
+    function getExperienceModeLabel(mode) {
+      const normalizedMode = normalizeExperienceMode(mode);
+      if (normalizedMode === "learn") return "Learn Mode";
+      if (normalizedMode === "practice") return "Practice Mode";
+      return "Apply Mode";
+    }
+
+    function getExperienceChannelLabel(channel) {
+      return normalizeExperienceChannel(channel) === "voice" ? "Voice" : "Chat";
+    }
+
+    function isVoiceLearnMode() {
+      return runtimeExperienceChannel === "voice" && runtimeExperienceMode === "learn";
+    }
+
+    function shouldAutoStartExperience() {
+      return EXPERIENCE_CHANNEL_LOCKED && EXPERIENCE_MODE_LOCKED && EXPERIENCE_MODE_AUTO_START;
+    }
+
+    function renderVoiceExperienceBadge() {
+      if (!voiceExperienceBadgeEl) return;
+      voiceExperienceBadgeEl.textContent = `${getExperienceChannelLabel(runtimeExperienceChannel)} · ${getExperienceModeLabel(runtimeExperienceMode)}`;
+      voiceExperienceBadgeEl.dataset.experienceChannel = runtimeExperienceChannel;
+      voiceExperienceBadgeEl.dataset.experienceMode = runtimeExperienceMode;
+    }
+
+    function normalizeVoiceLearnDemonstrations(learn) {
+      const demos = Array.isArray(learn?.demonstrations) ? learn.demonstrations : [];
+      return demos
+        .map((demo, index) => {
+          if (!demo || typeof demo !== "object") return null;
+          const audio = demo.audio && typeof demo.audio === "object" ? demo.audio : {};
+          const cuePoints = Array.isArray(demo.cuePoints)
+            ? demo.cuePoints
+                .map((cue) => {
+                  const timeSeconds = Number(cue?.timeSeconds ?? cue?.time ?? 0);
+                  const momentId = String(cue?.momentId || "").trim();
+                  if (!Number.isFinite(timeSeconds) || timeSeconds < 0 || !momentId) return null;
+                  return {
+                    timeSeconds,
+                    momentId,
+                    trigger: String(cue?.trigger || "ideal_step_started").trim() || "ideal_step_started"
+                  };
+                })
+                .filter(Boolean)
+                .sort((a, b) => a.timeSeconds - b.timeSeconds)
+            : [];
+          const transcript = Array.isArray(demo.transcript)
+            ? demo.transcript
+                .map((turn) => ({
+                  speaker: String(turn?.speaker || turn?.role || "").trim(),
+                  text: String(turn?.text || turn?.content || "").trim(),
+                  startSeconds: Number(turn?.startSeconds ?? turn?.start ?? 0) || 0,
+                  endSeconds: Number(turn?.endSeconds ?? turn?.end ?? 0) || 0
+                }))
+                .filter((turn) => turn.speaker && turn.text)
+            : [];
+          return {
+            id: String(demo.id || `voice-learn-demo-${index + 1}`).trim(),
+            title: String(demo.title || demo.label || "Modeled voice interaction").trim(),
+            audio: {
+              assetKey: String(audio.assetKey || "").trim(),
+              src: String(audio.src || audio.url || "").trim(),
+              mimeType: String(audio.mimeType || audio.type || "audio/mpeg").trim() || "audio/mpeg"
+            },
+            cuePoints,
+            transcript
+          };
+        })
+        .filter((demo) => demo && (demo.audio.src || demo.audio.assetKey));
+    }
+
+    function getActiveVoiceLearnDemo() {
+      const learn = scenarioDisplayConfig?.frontend?.voice?.learn;
+      const defaultDemoId = String(learn?.defaultDemoId || "").trim();
+      return runtimeVoiceLearnDemos.find((demo) => demo.id === defaultDemoId) || runtimeVoiceLearnDemos[0] || null;
+    }
+
+    function resolveVoiceLearnAudioSrc(demo) {
+      const directSrc = String(demo?.audio?.src || "").trim();
+      if (directSrc) return directSrc;
+      const assetKey = String(demo?.audio?.assetKey || "").trim();
+      if (!assetKey) return "";
+      if (/^(https?:|data:|blob:)/i.test(assetKey)) return assetKey;
+      const configuredAssets = window.CCS_CONFIG && typeof window.CCS_CONFIG.assets === "object" ? window.CCS_CONFIG.assets : {};
+      return String(configuredAssets[assetKey] || "").trim();
+    }
+
+    function renderVoiceLearnTranscript(demo) {
+      if (!voiceLearnTranscript) return;
+      const turns = Array.isArray(demo?.transcript) ? demo.transcript : [];
+      voiceLearnTranscript.innerHTML = turns.length
+        ? turns.map((turn) => `<div><strong>${escHtml(turn.speaker)}:</strong> ${escHtml(turn.text)}</div>`).join("")
+        : "";
+    }
+
+    function normalizeVoiceSystemWalkthrough(walkthrough) {
+      if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
+      return {
+        screens: walkthrough.screens,
+        moments: Array.isArray(walkthrough.moments) ? walkthrough.moments : []
+      };
+    }
+
+    function resolveVoiceWalkthroughAssetSrc(image) {
+      const directSrc = String(image?.src || "").trim();
+      if (directSrc) return directSrc;
+      const assetKey = String(image?.assetKey || "").trim();
+      if (!assetKey) return "";
+      if (/^(https?:|data:|blob:)/i.test(assetKey)) return assetKey;
+      const configuredAssets = window.CCS_CONFIG && typeof window.CCS_CONFIG.assets === "object" ? window.CCS_CONFIG.assets : {};
+      return String(configuredAssets[assetKey] || "").trim();
+    }
+
+    function setActiveSystemScreen(screenId) {
+      const screen = runtimeSystemWalkthrough?.screens?.find((item) => item.id === screenId);
+      if (!screen || !voiceLearnScreen || !voiceLearnScreenshot || !voiceLearnPlaceholder) return;
+      const src = resolveVoiceWalkthroughAssetSrc(screen.image || {});
+      voiceLearnScreen.classList.toggle("has-image", Boolean(src));
+      voiceLearnScreenshot.src = src || "";
+      voiceLearnScreenshot.alt = String(screen.image?.alt || screen.title || "System Tools screen").trim();
+      voiceLearnPlaceholder.textContent = src ? "" : (screen.image?.assetKey ? `Screenshot asset: ${screen.image.assetKey}` : "System walkthrough will appear here.");
+    }
+
+    function activateVoiceLearnCuePoints() {
+      const demo = getActiveVoiceLearnDemo();
+      if (!demo || !voiceLearnAudio) return;
+      const currentTime = Number(voiceLearnAudio.currentTime || 0);
+      demo.cuePoints.forEach((cuePoint, index) => {
+        if (triggeredVoiceLearnCueIndexes.has(index) || currentTime < cuePoint.timeSeconds) return;
+        const moment = runtimeSystemWalkthrough?.moments?.find((item) => item.id === cuePoint.momentId);
+        if (!moment) return;
+        triggeredVoiceLearnCueIndexes.add(index);
+        setActiveSystemScreen(moment.screenId);
+      });
+    }
+
+    function completeVoiceLearnDemo() {
+      if (voiceLearnCompletionPanel) voiceLearnCompletionPanel.classList.add("active");
+      setStatus("Demonstration complete.");
+    }
+
+    function startVoiceLearnDemo() {
+      const demo = getActiveVoiceLearnDemo();
+      if (!demo || !voiceLearnAudio) {
+        setStatus("Voice Learn demo unavailable.");
+        hintEl.textContent = "This scenario does not have a Voice Learn audio demonstration yet.";
+        return;
+      }
+      const src = resolveVoiceLearnAudioSrc(demo);
+      if (!src) {
+        setStatus("Voice Learn audio unavailable.");
+        hintEl.textContent = "Voice Learn audio is missing. Check the demo audio src or assetKey mapping.";
+        return;
+      }
+      if (voiceLearnTitle) voiceLearnTitle.textContent = demo.title || "Modeled voice interaction";
+      if (voiceLearnCompletionPanel) voiceLearnCompletionPanel.classList.remove("active");
+      if (voiceLearnAudio.src !== src) voiceLearnAudio.src = src;
+      triggeredVoiceLearnCueIndexes = new Set();
+      voiceLearnAudio.currentTime = 0;
+      voiceLearnAudio.play().catch(() => setStatus("Press Play to start the demonstration."));
+      setStatus("Voice Learn demonstration started.");
+    }
+
+    function pauseVoiceLearnDemo() {
+      if (voiceLearnAudio) voiceLearnAudio.pause();
+      setStatus("Voice Learn paused.");
+    }
+
+    function restartVoiceLearnDemo() {
+      startVoiceLearnDemo();
+    }
+
+    function renderVoiceLearnExperience() {
+      const active = isVoiceLearnMode();
+      if (voiceLearnPanel) voiceLearnPanel.classList.toggle("active", active);
+      if (guideShellEl) guideShellEl.classList.toggle("show", !active && !guideCollapsed);
+      if (startBtn) startBtn.textContent = active ? "Start Demonstration" : "📞 Start";
+      if (endBtn) endBtn.disabled = active ? true : endBtn.disabled;
+      if (!active) return;
+      renderVoiceInstructions([
+        "Listen to the modeled customer and agent conversation.",
+        "Use Play, Pause, and Restart to control the demonstration.",
+        "Watch System Tools update as the audio reaches each scenario moment."
+      ]);
+      if (callStartCalloutEl) {
+        callStartCalloutEl.innerHTML = "Listen to the modeled interaction; no microphone is needed for Learn Mode.";
+      }
+      const demo = getActiveVoiceLearnDemo();
+      renderVoiceLearnTranscript(demo);
+      if (voiceLearnTitle && demo) voiceLearnTitle.textContent = demo.title || "Modeled voice interaction";
+      if (runtimeSystemWalkthrough?.moments?.length) {
+        const firstMoment = runtimeSystemWalkthrough.moments[0];
+        if (firstMoment?.screenId) setActiveSystemScreen(firstMoment.screenId);
+      }
+      setStatus("Ready for Voice Learn.");
+      hintEl.textContent = "";
     }
 
     function renderVoiceInstructions(items) {
@@ -1572,6 +1977,11 @@ NOTES
       if (!config || typeof config !== "object") return false;
 
       scenarioDisplayConfig = config;
+      runtimeExperienceChannel = normalizeExperienceChannel(EXPERIENCE_CHANNEL_OVERRIDE || config.defaultChannel || "voice");
+      runtimeExperienceMode = normalizeExperienceMode(EXPERIENCE_MODE_OVERRIDE || (EXPERIENCE_MODE_LOCKED ? config.experienceMode : "learn"));
+      runtimeVoiceLearnDemos = normalizeVoiceLearnDemonstrations(config?.frontend?.voice?.learn);
+      runtimeSystemWalkthrough = normalizeVoiceSystemWalkthrough(config?.frontend?.chat?.systemWalkthrough);
+      renderVoiceExperienceBadge();
 
       const guideSections = config?.frontend?.voice?.guideSections;
       const endNote = String(config?.frontend?.voice?.endNote || "").trim();
@@ -1583,6 +1993,7 @@ NOTES
         guideShellEl.dataset.customerDisplayName = getVoiceCustomerDisplayName();
       }
 
+      renderVoiceLearnExperience();
       return true;
     }
 
@@ -1916,7 +2327,10 @@ NOTES
     }
 
     async function loadScenarioDisplayConfig() {
-      const url = `${SCENARIO_CONFIG_URL}?scenarioId=${encodeURIComponent(getScenarioId())}`;
+      const params = new URLSearchParams({ scenarioId: getScenarioId() });
+      if (EXPERIENCE_MODE_OVERRIDE) params.set("experienceMode", EXPERIENCE_MODE_OVERRIDE);
+      params.set("channel", runtimeExperienceChannel);
+      const url = `${SCENARIO_CONFIG_URL}?${params.toString()}`;
       const data = await fetchJSON(url, { method: "GET" }, 20000);
       if (!data || data.error || !data.scenario || typeof data.scenario !== "object") return null;
       return data.scenario;
@@ -2759,6 +3173,10 @@ NOTES
 
     async function start() {
       if (scenarioLoadFailed) return;
+      if (isVoiceLearnMode()) {
+        startVoiceLearnDemo();
+        return;
+      }
       evaluationRetryCancelled = false;
       const ident = getAgentIdentity();
       try { STORE.setItem(AGENT_NAME_STORAGE_KEY, ident.agentName); } catch (_) { }
@@ -3031,6 +3449,13 @@ NOTES
     toggleGuideBtn.onclick = toggleGuide;
     startBtn.onclick = start;
     endBtn.onclick = endCall;
+    if (voiceLearnPlayBtn) voiceLearnPlayBtn.onclick = startVoiceLearnDemo;
+    if (voiceLearnPauseBtn) voiceLearnPauseBtn.onclick = pauseVoiceLearnDemo;
+    if (voiceLearnRestartBtn) voiceLearnRestartBtn.onclick = restartVoiceLearnDemo;
+    if (voiceLearnAudio) {
+      voiceLearnAudio.addEventListener("timeupdate", activateVoiceLearnCuePoints);
+      voiceLearnAudio.addEventListener("ended", completeVoiceLearnDemo);
+    }
     coachEl.addEventListener("click", (event) => {
       const button = event.target.closest("[data-report-action]");
       if (!button) return;
@@ -3042,6 +3467,7 @@ NOTES
 
     loadScenarios().then(() => {
       clearPersisted();
+      if (!scenarioLoadFailed && shouldAutoStartExperience()) start();
     });
   </script>
 </body>

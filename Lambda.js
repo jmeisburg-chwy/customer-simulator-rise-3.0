@@ -117,6 +117,16 @@ function normalizeScenarioId(idRaw) {
   return String(idRaw || "").trim().toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
 }
 
+function normalizeExperienceMode(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  return ["learn", "practice", "apply"].includes(mode) ? mode : "apply";
+}
+
+function normalizeExperienceChannel(value) {
+  const channel = String(value || "").trim().toLowerCase();
+  return ["chat", "voice"].includes(channel) ? channel : "chat";
+}
+
 function normalizeLibraryText(value) {
   return String(value || "").trim();
 }
@@ -251,6 +261,7 @@ function normalizeUploadedScenario(rawScenario) {
   scenario.channels = normalizeChannels(scenario.channels, scenario);
   scenario.label = normalizeLibraryText(scenario.label || scenario?.catalog?.label || scenario.title);
   scenario.title = normalizeLibraryText(scenario.title || scenario?.catalog?.title || scenario.label);
+  scenario.experienceMode = normalizeExperienceMode(scenario.experienceMode);
 
   if (!scenario.catalog || typeof scenario.catalog !== "object") scenario.catalog = {};
   scenario.catalog.label = normalizeLibraryText(scenario.catalog.label || scenario.label);
@@ -431,8 +442,15 @@ function scenarioUnavailablePayload(scenarioId) {
   };
 }
 
-function buildScenarioClientConfig(s) {
+function buildScenarioClientConfig(s, options = {}) {
   const scenario = s && typeof s === "object" ? s : {};
+  const hasExperienceModeOverride = Object.prototype.hasOwnProperty.call(options || {}, "experienceMode");
+  const experienceMode = normalizeExperienceMode(hasExperienceModeOverride ? options.experienceMode : scenario.experienceMode);
+  const supportedChannels = Array.isArray(scenario.channels) ? scenario.channels : [];
+  const explicitDefaultChannel = normalizeExperienceChannel(scenario.defaultChannel || scenario.channelDefault);
+  const defaultChannel = supportedChannels.includes(explicitDefaultChannel)
+    ? explicitDefaultChannel
+    : (supportedChannels[0] || "chat");
   const normalizeCoachSteps = (items) =>
     Array.isArray(items)
       ? items
@@ -449,6 +467,72 @@ function buildScenarioClientConfig(s) {
           })
           .filter(Boolean)
       : [];
+  const normalizeSystemGuide = (guide) => {
+    if (!guide || typeof guide !== "object") return null;
+    const title = String(guide.title || "").trim();
+    const body = String(guide.body || guide.text || "").trim();
+    if (!title && !body) return null;
+    return {
+      type: String(guide.type || "").trim(),
+      title,
+      body,
+      buttonLabel: String(guide.buttonLabel || "").trim(),
+      placement: String(guide.placement || "").trim(),
+      nextScreenId: String(guide.nextScreenId || "").trim(),
+      spotlightHotspotId: String(guide.spotlightHotspotId || "").trim(),
+      showBackdrop: guide.showBackdrop !== false,
+      showSpotlight: guide.showSpotlight !== false,
+      showBeacon: guide.showBeacon !== false,
+      spotlightColor: String(guide.spotlightColor || "").trim()
+    };
+  };
+  const normalizeSystemWalkthroughMoments = (moments, screens) => {
+    if (!Array.isArray(moments)) return [];
+    const screenList = Array.isArray(screens) ? screens : [];
+    const screenIds = new Set(screenList.map((screen) => screen.id));
+    const validTriggers = new Set([
+      "ideal_step_started",
+      "ideal_step_completed",
+      "learner_needs_support",
+      "customer_turn_started",
+      "customer_turn_completed",
+      "chat_step"
+    ]);
+    return moments
+      .map((moment, index) => {
+        if (!moment || typeof moment !== "object") return null;
+        const stepId = Number(moment.stepId ?? moment.step ?? moment.currentStep);
+        const screenId = String(moment.screenId || moment.targetScreenId || "").trim();
+        const trigger = String(moment.trigger || "ideal_step_started").trim() || "ideal_step_started";
+        if (!Number.isFinite(stepId) || !screenId || !screenIds.has(screenId)) return null;
+        if (!validTriggers.has(trigger)) return null;
+        const targetScreen = screenList.find((screen) => screen.id === screenId);
+        const hotspotId = String(moment.hotspotId || moment.targetHotspotId || moment.hint?.hotspotId || "").trim();
+        const hasHotspot = !hotspotId || targetScreen?.hotspots?.some((hotspot) => hotspot.id === hotspotId);
+        if (!hasHotspot) return null;
+        const hint = moment.hint && typeof moment.hint === "object"
+          ? {
+              title: String(moment.hint.title || "").trim(),
+              body: String(moment.hint.body || moment.hint.text || "").trim(),
+              hotspotId: String(moment.hint.hotspotId || hotspotId || "").trim()
+            }
+          : null;
+        return {
+          id: String(moment.id || `${screenId}-step-${stepId}-${index + 1}`).trim(),
+          stepId,
+          screenId,
+          trigger,
+          title: String(moment.title || "").trim(),
+          description: String(moment.description || "").trim(),
+          hotspotId,
+          guideId: String(moment.guideId || "").trim(),
+          hint,
+          analyticsKey: String(moment.analyticsKey || "").trim(),
+          voiceCueId: String(moment.voiceCueId || "").trim()
+        };
+      })
+      .filter(Boolean);
+  };
   const normalizeSystemWalkthrough = (walkthrough) => {
     if (!walkthrough || typeof walkthrough !== "object" || !Array.isArray(walkthrough.screens)) return null;
     const screens = walkthrough.screens
@@ -473,6 +557,7 @@ function buildScenarioClientConfig(s) {
                 return {
                   id: String(hotspot.id || "").trim(),
                   label: String(hotspot.label || "").trim(),
+                  action: String(hotspot.action || "").trim(),
                   x: Number(hotspot.x) || 0,
                   y: Number(hotspot.y) || 0,
                   width: Number(hotspot.width) || 0,
@@ -491,11 +576,17 @@ function buildScenarioClientConfig(s) {
             src: String(image.src || image.url || "").trim(),
             alt: String(image.alt || "").trim()
           },
+          guide: normalizeSystemGuide(screen.guide),
           hotspots
         };
       })
       .filter(Boolean);
-    return screens.length ? { screens } : null;
+    return screens.length
+      ? {
+          screens,
+          moments: normalizeSystemWalkthroughMoments(walkthrough.moments, screens)
+        }
+      : null;
   };
   const normalizeHotkeys = (items) =>
     Array.isArray(items)
@@ -521,14 +612,85 @@ function buildScenarioClientConfig(s) {
           })
           .filter(Boolean)
       : [];
+  const normalizeLearnModeScript = (rubric) =>
+    Array.isArray(rubric)
+      ? rubric
+          .map((item, index) => {
+            const text = String(item?.ideal_agent_example || "").trim();
+            if (!text) return null;
+            return { stepId: index, text };
+          })
+          .filter(Boolean)
+      : [];
+  const normalizeVoiceLearnDemonstrations = (learn) => {
+    const demonstrations = Array.isArray(learn?.demonstrations) ? learn.demonstrations : [];
+    const normalized = demonstrations
+      .map((demo, index) => {
+        if (!demo || typeof demo !== "object") return null;
+        const id = String(demo.id || `voice-learn-demo-${index + 1}`).trim();
+        const audio = demo.audio && typeof demo.audio === "object" ? demo.audio : {};
+        const assetKey = String(audio.assetKey || "").trim();
+        const src = String(audio.src || audio.url || "").trim();
+        if (!id || (!assetKey && !src)) return null;
+        const cuePoints = Array.isArray(demo.cuePoints)
+          ? demo.cuePoints
+              .map((cue) => {
+                if (!cue || typeof cue !== "object") return null;
+                const timeSeconds = Number(cue.timeSeconds ?? cue.time ?? cue.startSeconds);
+                const momentId = String(cue.momentId || cue.moment || "").trim();
+                const trigger = String(cue.trigger || "ideal_step_started").trim() || "ideal_step_started";
+                if (!Number.isFinite(timeSeconds) || timeSeconds < 0 || !momentId) return null;
+                return { timeSeconds, momentId, trigger };
+              })
+              .filter(Boolean)
+          : [];
+        const transcript = Array.isArray(demo.transcript)
+          ? demo.transcript
+              .map((turn) => {
+                if (!turn || typeof turn !== "object") return null;
+                const speaker = String(turn.speaker || turn.role || "").trim().toLowerCase();
+                const text = String(turn.text || turn.content || "").trim();
+                if (!speaker || !text) return null;
+                return {
+                  speaker,
+                  startSeconds: Number(turn.startSeconds ?? turn.start ?? 0) || 0,
+                  endSeconds: Number(turn.endSeconds ?? turn.end ?? 0) || 0,
+                  text
+                };
+              })
+              .filter(Boolean)
+          : [];
+        return {
+          id,
+          title: String(demo.title || demo.label || "").trim(),
+          audio: {
+            assetKey,
+            src,
+            mimeType: String(audio.mimeType || audio.type || "audio/mpeg").trim() || "audio/mpeg",
+            durationSeconds: Number(audio.durationSeconds ?? audio.duration ?? 0) || 0
+          },
+          cuePoints,
+          transcript
+        };
+      })
+      .filter(Boolean);
+    return {
+      defaultDemoId: String(learn?.defaultDemoId || normalized[0]?.id || "").trim(),
+      demonstrations: normalized
+    };
+  };
 
   return {
     id: String(scenario.id || "").trim(),
     label: String(scenario.label || "").trim(),
     title: String(scenario.title || "").trim(),
-    channels: Array.isArray(scenario.channels) ? scenario.channels : [],
+    description: String(scenario.description || scenario?.catalog?.description || scenario?.customer?.persona?.goal || "").trim(),
+    experienceMode,
+    defaultChannel,
+    channels: supportedChannels,
     chatConfig: {
       hotkeyProfile: String(scenario?.frontend?.chat?.hotkeyProfile || "core").trim() || "core",
+      learnModeScript: normalizeLearnModeScript(scenario?.coaching?.behaviorRubric),
       stepProgression: Array.isArray(scenario?.simulation?.stateModel?.chatStepProgression)
         ? scenario.simulation.stateModel.chatStepProgression
             .map((step) => {
@@ -631,7 +793,8 @@ function buildScenarioClientConfig(s) {
               })
               .filter(Boolean)
           : [],
-        endNote: String(scenario?.frontend?.voice?.endNote || "").trim()
+        endNote: String(scenario?.frontend?.voice?.endNote || "").trim(),
+        learn: normalizeVoiceLearnDemonstrations(scenario?.frontend?.voice?.learn)
       }
     }
   };
@@ -1978,13 +2141,24 @@ exports.handler = async (event) => {
     }
 
     if (method === "GET" && path.endsWith("/scenario")) {
+      const queryParams = event?.queryStringParameters || {};
       const scenarioId =
-        event?.queryStringParameters?.scenarioId ||
-        event?.queryStringParameters?.id ||
+        queryParams.scenarioId ||
+        queryParams.id ||
         "";
+      const hasExperienceModeOverride = Object.prototype.hasOwnProperty.call(queryParams, "experienceMode");
+      const hasChannelOverride = Object.prototype.hasOwnProperty.call(queryParams, "channel");
       const scenario = await getScenario(scenarioId);
       if (!scenario) return json(scenarioUnavailablePayload(scenarioId), 404);
-      return json({ scenario: buildScenarioClientConfig(scenario) });
+      return json({
+        scenario: buildScenarioClientConfig(
+          scenario,
+          {
+            ...(hasExperienceModeOverride ? { experienceMode: queryParams.experienceMode } : {}),
+            ...(hasChannelOverride ? { channel: normalizeExperienceChannel(queryParams.channel) } : {})
+          }
+        )
+      });
     }
 
     if (method === "POST" && path.endsWith("/session")) {
@@ -2523,6 +2697,8 @@ exports.__test = {
   buildCoachingDynamoItems,
   selectFocusBehavior,
   shouldRetryOpenAIRequest,
+  normalizeExperienceMode,
+  normalizeExperienceChannel,
   normalizeScenarioId,
   normalizeChatStepProgression,
   normalizeUploadedScenario,
